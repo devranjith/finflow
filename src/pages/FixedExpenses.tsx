@@ -51,8 +51,8 @@ export const FixedExpenses: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="flex flex-col h-[calc(100vh-4rem)] space-y-6 max-w-4xl mx-auto pb-4">
+      <div className="flex justify-between items-center shrink-0">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-zinc-50">Fixed Expenses</h1>
           <p className="text-zinc-400 mt-1">Manage your recurring monthly commitments.</p>
@@ -111,15 +111,15 @@ export const FixedExpenses: React.FC = () => {
         </Dialog>
       </div>
 
-      <Card className="bg-zinc-900/50 border-zinc-800">
-        <CardHeader>
+      <Card className="bg-zinc-900/50 border-zinc-800 flex flex-col flex-1 min-h-0">
+        <CardHeader className="shrink-0">
           <CardTitle className="text-lg flex items-center gap-2">
             <Receipt size={20} className="text-zinc-400" />
             Current Fixed Expenses
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-[600px] pr-4">
+        <CardContent className="flex-1 min-h-0">
+          <ScrollArea className="h-full pr-4">
             <div className="space-y-4">
               {fixedExpenses.length === 0 ? (
                 <p className="text-zinc-500">No fixed expenses configured.</p>

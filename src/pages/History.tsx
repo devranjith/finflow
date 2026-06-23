@@ -90,8 +90,8 @@ export const History: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      <div className="flex justify-between items-end mb-8">
+    <div className="flex flex-col h-[calc(100vh-4rem)] space-y-6 max-w-4xl mx-auto pb-4">
+      <div className="flex justify-between items-end mb-8 shrink-0">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-zinc-50">Transaction History</h1>
           <p className="text-zinc-400 mt-1">View and export all your past transactions.</p>
@@ -102,8 +102,8 @@ export const History: React.FC = () => {
         </Button>
       </div>
 
-      <Card className="bg-zinc-900/50 border-zinc-800">
-        <CardHeader className="pb-4">
+      <Card className="bg-zinc-900/50 border-zinc-800 flex flex-col flex-1 min-h-0">
+        <CardHeader className="pb-4 shrink-0">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
             <Input 
@@ -114,11 +114,11 @@ export const History: React.FC = () => {
             />
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1 min-h-0">
           {isLoading ? (
             <div className="text-zinc-500 text-center py-8">Loading history...</div>
           ) : (
-            <ScrollArea className="h-[600px] pr-4">
+            <ScrollArea className="h-full pr-4">
               <div className="space-y-3">
                 {filteredItems.map(item => {
                   const isNeeds = item.bucket_type === 'NEEDS';

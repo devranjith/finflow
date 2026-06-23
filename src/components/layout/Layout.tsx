@@ -78,7 +78,7 @@ export const Layout: React.FC = () => {
       </main>
       
       {/* AI Advisor Chat Widget */}
-      <AdvisorChat />
+      {/*<AdvisorChat />*/}
     </div>
   );
 };
