@@ -65,8 +65,10 @@ export const AIInsightsCard: React.FC = () => {
             <div className="h-4 bg-zinc-800 rounded w-4/6"></div>
           </div>
         ) : (
-          <div className="text-sm text-zinc-300 space-y-3 whitespace-pre-line mt-2 leading-relaxed">
-            {insights}
+          <div className="max-h-[160px] overflow-y-auto pr-2 mt-2 custom-scrollbar">
+            <div className="text-sm text-zinc-300 space-y-3 whitespace-pre-line leading-relaxed">
+              {insights}
+            </div>
           </div>
         )}
       </CardContent>
