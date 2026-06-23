@@ -69,10 +69,10 @@ export const Layout: React.FC = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-hidden bg-zinc-950 relative">
+      {/* Main Content Area */}
+      <main className="flex-1 overflow-y-auto bg-zinc-950 relative">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-zinc-900/40 via-zinc-950 to-zinc-950 pointer-events-none" />
-        <div className="relative z-10 p-8 max-w-6xl mx-auto h-full">
+        <div className="relative z-10 p-8 max-w-6xl mx-auto min-h-full">
           <Outlet />
         </div>
       </main>

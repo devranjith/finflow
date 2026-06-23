@@ -52,11 +52,18 @@ export const Settings: React.FC = () => {
                 type="password"
                 placeholder="AIzaSy..."
                 value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
+                onChange={(e) => {
+                  setApiKey(e.target.value);
+                  if (e.target.value) {
+                    localStorage.setItem('finflow_gemini_key', e.target.value.trim());
+                  } else {
+                    localStorage.removeItem('finflow_gemini_key');
+                  }
+                }}
                 className="bg-zinc-950 border-zinc-800 font-mono"
               />
               <p className="text-xs text-zinc-500">
-                You can get a free API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-emerald-400 hover:underline">Google AI Studio</a>.
+                You can get a free API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-emerald-400 hover:underline">Google AI Studio</a>. (Auto-saves locally)
               </p>
             </div>
             <Button type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2">
