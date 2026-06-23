@@ -1,0 +1,155 @@
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../context/AuthContext';
+import { Card, CardContent, CardHeader } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Download, Search } from 'lucide-react';
+import { Input } from '../components/ui/input';
+import { ScrollArea } from '../components/ui/scroll-area';
+import type { Transaction } from '../types/database';
+
+type HistoryItem = Transaction & {
+  bucket_type: string;
+  month_year: string;
+};
+
+export const History: React.FC = () => {
+  const { user } = useAuth();
+  const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      if (!user) return;
+      setIsLoading(true);
+      try {
+        // 1. Fetch all cycles for user
+        const { data: cycles } = await supabase.from('cycles').select('id, month_year').eq('user_id', user.id);
+        if (!cycles || cycles.length === 0) return;
+        
+        const cycleIds = cycles.map(c => c.id);
+
+        // 2. Fetch all buckets for those cycles
+        const { data: buckets } = await supabase.from('buckets').select('id, bucket_type').in('cycle_id', cycleIds);
+        
+        // 3. Fetch all transactions for those cycles
+        const { data: transactions } = await supabase.from('transactions').select('*').in('cycle_id', cycleIds).order('date', { ascending: false });
+
+        if (transactions && buckets) {
+          const items: HistoryItem[] = transactions.map(tx => {
+            const cycle = cycles.find(c => c.id === tx.cycle_id);
+            const bucket = buckets.find(b => b.id === tx.bucket_id);
+            return {
+              ...tx,
+              bucket_type: bucket?.bucket_type || 'UNKNOWN',
+              month_year: cycle?.month_year || 'UNKNOWN'
+            };
+          });
+          setHistoryItems(items);
+        }
+      } catch (e) {
+        console.error('Error fetching history:', e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchHistory();
+  }, [user]);
+
+  const filteredItems = historyItems.filter(item => 
+    item.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    item.bucket_type.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const exportCSV = () => {
+    if (historyItems.length === 0) return;
+    
+    const headers = ['Date', 'Cycle', 'Bucket', 'Description', 'Amount'];
+    const csvRows = historyItems.map(item => [
+      new Date(item.date).toLocaleDateString(),
+      item.month_year,
+      item.bucket_type,
+      `"${item.description.replace(/"/g, '""')}"`, // escape quotes
+      item.amount.toString()
+    ]);
+    
+    const csvContent = [
+      headers.join(','),
+      ...csvRows.map(e => e.join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `finflow-history-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  return (
+    <div className="space-y-6 max-w-4xl">
+      <div className="flex justify-between items-end mb-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-zinc-50">Transaction History</h1>
+          <p className="text-zinc-400 mt-1">View and export all your past transactions.</p>
+        </div>
+        <Button onClick={exportCSV} className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2">
+          <Download size={16} />
+          Export CSV
+        </Button>
+      </div>
+
+      <Card className="bg-zinc-900/50 border-zinc-800">
+        <CardHeader className="pb-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+            <Input 
+              placeholder="Search transactions..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-zinc-950 border-zinc-800 text-zinc-100 placeholder:text-zinc-500"
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-zinc-500 text-center py-8">Loading history...</div>
+          ) : (
+            <ScrollArea className="h-[600px] pr-4">
+              <div className="space-y-3">
+                {filteredItems.map(item => {
+                  const isNeeds = item.bucket_type === 'NEEDS';
+                  const isWants = item.bucket_type === 'WANTS';
+                  return (
+                    <div key={item.id} className="flex items-center justify-between p-4 rounded-lg bg-zinc-950/50 border border-zinc-800/50 hover:border-zinc-700 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-3 h-3 rounded-full ${isNeeds ? 'bg-emerald-500' : isWants ? 'bg-yellow-400' : 'bg-red-500'}`} />
+                        <div>
+                          <p className="font-medium text-zinc-100">{item.description}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xs text-zinc-500">{new Date(item.date).toLocaleDateString()}</span>
+                            <span className="text-xs text-zinc-600">•</span>
+                            <span className="text-xs text-zinc-400 font-medium">{item.bucket_type}</span>
+                            <span className="text-xs text-zinc-600">•</span>
+                            <span className="text-xs text-zinc-500">{item.month_year}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="font-semibold text-zinc-200">-₹{item.amount.toLocaleString('en-IN')}</div>
+                    </div>
+                  );
+                })}
+                {filteredItems.length === 0 && (
+                  <div className="text-center text-zinc-500 py-12">No transactions found.</div>
+                )}
+              </div>
+            </ScrollArea>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};

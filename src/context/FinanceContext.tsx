@@ -15,6 +15,8 @@ interface FinanceContextType {
   addFixedExpense: (name: string, amount: number, category: string) => Promise<void>;
   editFixedExpense: (id: string, name: string, amount: number, category: string) => Promise<void>;
   deleteFixedExpense: (id: string) => Promise<void>;
+  deleteTransaction: (id: string, bucketId: string, amount: number) => Promise<void>;
+  closeMonth: () => Promise<void>;
 }
 
 const FinanceContext = createContext<FinanceContextType>({
@@ -29,6 +31,8 @@ const FinanceContext = createContext<FinanceContextType>({
   addFixedExpense: async () => {},
   editFixedExpense: async () => {},
   deleteFixedExpense: async () => {},
+  deleteTransaction: async () => {},
+  closeMonth: async () => {},
 });
 
 export const useFinance = () => useContext(FinanceContext);
@@ -134,6 +138,26 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  const deleteTransaction = async (id: string, bucketId: string, amount: number) => {
+    if (!cycle) return;
+    try {
+      const { error } = await supabase.from('transactions').delete().eq('id', id);
+      if (error) {
+        console.error("Error deleting transaction:", error);
+      } else {
+        const bucket = buckets.find(b => b.id === bucketId);
+        if (bucket) {
+          await supabase.from('buckets').update({
+            spent_amount: bucket.spent_amount - amount
+          }).eq('id', bucket.id);
+        }
+        await fetchData();
+      }
+    } catch (e) {
+      console.error("Exception deleting transaction:", e);
+    }
+  };
+
   const borrowFromBucket = async (fromBucketId: string, toBucketId: string, amount: number) => {
     if (!cycle) return;
     
@@ -184,6 +208,53 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     } catch (e) {
       console.error("Exception in setupMonth:", e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const closeMonth = async () => {
+    if (!user || !cycle) return;
+    setIsLoading(true);
+    try {
+      // Calculate remaining buffer from current cycle
+      const bufferBucket = buckets.find(b => b.bucket_type === 'BUFFER');
+      const rolloverAmount = bufferBucket ? (bufferBucket.allocated_amount - bufferBucket.spent_amount) : 0;
+      
+      // Calculate next month string
+      const now = new Date();
+      const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const nextMonthYear = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}`;
+
+      // Insert new cycle carrying over income/fixed, but with added rollover buffer logic
+      const totalFixed = fixedExpenses.reduce((acc, exp) => acc + exp.amount, 0);
+      const leftover = cycle.total_income - totalFixed;
+
+      const needsAmount = leftover * 0.5;
+      const wantsAmount = leftover * 0.3;
+      // The new buffer gets its 20% PLUS the rollover from the previous month
+      const bufferAmount = (leftover * 0.2) + Math.max(0, rolloverAmount);
+
+      const { data: newCycle, error: cycleError } = await supabase.from('cycles').insert({
+        user_id: user.id,
+        month_year: nextMonthYear,
+        total_income: cycle.total_income,
+        total_fixed: totalFixed,
+        leftover_money: leftover
+      }).select().single();
+
+      if (cycleError) console.error("Error closing month:", cycleError);
+
+      if (newCycle && !cycleError) {
+        await supabase.from('buckets').insert([
+          { cycle_id: newCycle.id, bucket_type: 'NEEDS', allocated_amount: needsAmount },
+          { cycle_id: newCycle.id, bucket_type: 'WANTS', allocated_amount: wantsAmount },
+          { cycle_id: newCycle.id, bucket_type: 'BUFFER', allocated_amount: bufferAmount },
+        ]);
+        alert("Month closed and buffer rolled over to next month! It will become visible on the 1st.");
+      }
+    } catch (e) {
+      console.error("Exception closing month:", e);
     } finally {
       setIsLoading(false);
     }
@@ -277,7 +348,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   return (
-    <FinanceContext.Provider value={{ cycle, buckets, transactions, fixedExpenses, isLoading, addTransaction, borrowFromBucket, setupMonth, addFixedExpense, editFixedExpense, deleteFixedExpense }}>
+    <FinanceContext.Provider value={{ cycle, buckets, transactions, fixedExpenses, isLoading, addTransaction, borrowFromBucket, setupMonth, addFixedExpense, editFixedExpense, deleteFixedExpense, deleteTransaction, closeMonth }}>
       {children}
     </FinanceContext.Provider>
   );

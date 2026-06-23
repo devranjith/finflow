@@ -4,13 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Progress } from '../components/ui/progress';
-import { AlertCircle, IndianRupee } from 'lucide-react';
+import { AlertCircle, IndianRupee, Trash } from 'lucide-react';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { TransactionDrawer } from '../components/expenses/TransactionDrawer';
+import { ScrollArea } from '../components/ui/scroll-area';
 
 
 export const Dashboard: React.FC = () => {
-  const { cycle, buckets, transactions, isLoading, setupMonth } = useFinance();
+  const { cycle, buckets, transactions, isLoading, setupMonth, closeMonth, deleteTransaction } = useFinance();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [incomeInput, setIncomeInput] = useState('');
 
@@ -69,7 +70,14 @@ export const Dashboard: React.FC = () => {
       {/* Header & Alerts */}
       <div className="flex justify-between items-end mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-50">Dashboard</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-3xl font-bold tracking-tight text-zinc-50">Dashboard</h1>
+            <Button variant="outline" size="sm" className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300 h-8 text-xs" onClick={() => {
+              if (window.confirm("Are you sure you want to close this month and rollover your buffer to the next month?")) closeMonth();
+            }}>
+              Close Month
+            </Button>
+          </div>
           <p className="text-zinc-400 mt-1">Cycle: {cycle.month_year}</p>
         </div>
         <div className="flex items-center gap-2 bg-zinc-900/80 px-4 py-2 rounded-lg border border-zinc-800">
@@ -156,29 +164,38 @@ export const Dashboard: React.FC = () => {
             <CardTitle className="text-lg">Recent Transactions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {transactions.slice(0, 5).map((tx) => {
-                const bucket = buckets.find(b => b.id === tx.bucket_id);
-                const isNeeds = bucket?.bucket_type === 'NEEDS';
-                const isWants = bucket?.bucket_type === 'WANTS';
-                
-                return (
-                  <div key={tx.id} className="flex items-center justify-between p-3 rounded-lg bg-zinc-950/50 border border-zinc-800/50">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${isNeeds ? 'bg-emerald-500' : isWants ? 'bg-yellow-400' : 'bg-red-500'}`} />
-                      <div>
-                        <p className="text-sm font-medium text-zinc-200">{tx.description}</p>
-                        <p className="text-xs text-zinc-500">{new Date(tx.date).toLocaleDateString()}</p>
+            <ScrollArea className="h-[300px] pr-4">
+              <div className="space-y-4">
+                {transactions.slice(0, 50).map((tx) => {
+                  const bucket = buckets.find(b => b.id === tx.bucket_id);
+                  const isNeeds = bucket?.bucket_type === 'NEEDS';
+                  const isWants = bucket?.bucket_type === 'WANTS';
+                  
+                  return (
+                    <div key={tx.id} className="flex items-center justify-between p-3 rounded-lg bg-zinc-950/50 border border-zinc-800/50">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full ${isNeeds ? 'bg-emerald-500' : isWants ? 'bg-yellow-400' : 'bg-red-500'}`} />
+                        <div>
+                          <p className="text-sm font-medium text-zinc-200">{tx.description}</p>
+                          <p className="text-xs text-zinc-500">{new Date(tx.date).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="font-semibold text-zinc-300">-₹{tx.amount.toLocaleString('en-IN')}</div>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-red-400 hover:bg-zinc-900" onClick={() => {
+                          if (window.confirm("Delete this transaction?")) deleteTransaction(tx.id, tx.bucket_id, tx.amount);
+                        }}>
+                          <Trash size={16} />
+                        </Button>
                       </div>
                     </div>
-                    <div className="font-semibold text-zinc-300">-₹{tx.amount.toLocaleString('en-IN')}</div>
-                  </div>
-                );
-              })}
-              {transactions.length === 0 && (
-                <div className="text-center text-zinc-500 py-6">No transactions yet.</div>
-              )}
-            </div>
+                  );
+                })}
+                {transactions.length === 0 && (
+                  <div className="text-center text-zinc-500 py-6">No transactions yet.</div>
+                )}
+              </div>
+            </ScrollArea>
           </CardContent>
         </Card>
 

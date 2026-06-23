@@ -7,6 +7,7 @@ import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { FixedExpenses } from './pages/FixedExpenses';
 import { Settings } from './pages/Settings';
+import { History } from './pages/History';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
@@ -34,7 +35,7 @@ const AppRoutes = () => {
         <Route index element={<Dashboard />} />
         <Route path="fixed-expenses" element={<FixedExpenses />} />
         <Route path="settings" element={<Settings />} />
-        <Route path="history" element={<div className="text-zinc-50">History (Coming soon)</div>} />
+        <Route path="history" element={<History />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
