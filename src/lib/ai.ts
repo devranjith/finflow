@@ -25,28 +25,7 @@ export async function askAdvisor(
 
   const genAI = new GoogleGenerativeAI(apiKey);
 
-  let targetModelName = 'gemini-1.5-flash';
-  try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-    if (res.ok) {
-      const data = await res.json();
-      const models = data.models || [];
-      const validModels = models.filter((m: any) => 
-        m.supportedGenerationMethods?.includes('generateContent') && m.name.includes('gemini')
-      );
-      if (validModels.length > 0) {
-        const flashModel = validModels.find((m: any) => m.name.includes('flash'));
-        if (flashModel) {
-           targetModelName = flashModel.name.replace('models/', '');
-        } else {
-           targetModelName = validModels[0].name.replace('models/', '');
-        }
-        console.log("Dynamically selected Gemini model:", targetModelName);
-      }
-    }
-  } catch (e) {
-    console.warn("Could not dynamically fetch models, falling back to", targetModelName);
-  }
+  const targetModelName = 'gemini-1.5-flash';
 
   const model = genAI.getGenerativeModel({ model: targetModelName });
 
