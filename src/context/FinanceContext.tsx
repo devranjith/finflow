@@ -394,7 +394,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const fundSavingsGoal = async (id: string, amount: number) => {
-    if (!user) return;
+    if (!user || !cycle) return;
     try {
       const goal = savingsGoals.find(g => g.id === id);
       if (!goal) return;
@@ -403,8 +403,31 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         current_amount: goal.current_amount + amount
       }).eq('id', id).eq('user_id', user.id);
       
-      if (error) console.error("Error funding savings goal:", error);
-      else await fetchData();
+      if (error) {
+        console.error("Error funding savings goal:", error);
+        return;
+      }
+
+      // Record this as a transaction from the BUFFER bucket
+      const bufferBucket = buckets.find(b => b.bucket_type === 'BUFFER');
+      if (bufferBucket) {
+        const { error: txError } = await supabase.from('transactions').insert({
+          cycle_id: cycle.id,
+          bucket_id: bufferBucket.id,
+          amount: amount,
+          description: `Funded Goal: ${goal.name}`
+        });
+
+        if (!txError) {
+          await supabase.from('buckets').update({
+            spent_amount: bufferBucket.spent_amount + amount
+          }).eq('id', bufferBucket.id);
+        } else {
+          console.error("Error adding funding transaction:", txError);
+        }
+      }
+
+      await fetchData();
     } catch (e) {
       console.error("Exception funding savings goal:", e);
     }
