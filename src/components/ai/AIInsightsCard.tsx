@@ -34,7 +34,7 @@ export const AIInsightsCard: React.FC = () => {
           recentTransactions: transactions.slice(0, 5).map(t => `${t.description}: ₹${t.amount}`)
         };
 
-        const prompt = `Based on my current financial context, generate exactly 3 short, punchy, and actionable bullet points summarizing my financial health or spending habits. Do not use markdown bolding or headers. Start each bullet with a relevant emoji. Make it sound like a premium financial advisor.`;
+        const prompt = `Based on my current financial context, generate exactly 3 short, punchy, and actionable bullet points summarizing my financial health or spending habits. Provide only plain text with emojis. NEVER use asterisks, bold text, or headers. Make it sound like a premium financial advisor.`;
 
         const result = await askAdvisor(prompt, contextData, geminiApiKey);
         setInsights(result);

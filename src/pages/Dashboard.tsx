@@ -67,7 +67,7 @@ export const Dashboard: React.FC = () => {
 
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] space-y-6">
+    <div className="flex flex-col md:h-[calc(100vh-4rem)] h-auto space-y-6 pb-20 md:pb-0">
       {/* Header & Alerts */}
       <div className="flex justify-between items-end mb-8">
         <div>
@@ -158,7 +158,7 @@ export const Dashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1 min-h-0 pb-4">
         {/* Transactions List */}
-        <Card className="md:col-span-2 bg-zinc-900/50 border-zinc-800 flex flex-col">
+        <Card className="md:col-span-2 bg-zinc-900/50 border-zinc-800 flex flex-col min-h-[400px] md:min-h-0">
           <CardHeader className="shrink-0">
             <CardTitle className="text-lg">Recent Transactions</CardTitle>
           </CardHeader>
@@ -196,7 +196,7 @@ export const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        <div className="space-y-6 flex flex-col min-h-0">
+        <div className="space-y-6 flex flex-col min-h-[400px] md:min-h-0">
           <div className="shrink-0">
             <AIInsightsCard />
           </div>
