@@ -5,15 +5,20 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Progress } from '../components/ui/progress';
 import { AlertCircle, IndianRupee, Trash } from 'lucide-react';
-import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { TransactionDrawer } from '../components/expenses/TransactionDrawer';
 import { ScrollArea } from '../components/ui/scroll-area';
+import { ConfirmModal } from '../components/ui/confirm-modal';
+import { AIInsightsCard } from '../components/ai/AIInsightsCard';
+import { SavingsGoalsCard } from '../components/expenses/SavingsGoalsCard';
 
 
 export const Dashboard: React.FC = () => {
   const { cycle, buckets, transactions, isLoading, setupMonth, closeMonth, deleteTransaction } = useFinance();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [incomeInput, setIncomeInput] = useState('');
+  
+  const [deleteTxParams, setDeleteTxParams] = useState<{id: string, bucketId: string, amount: number} | null>(null);
+  const [showCloseMonthModal, setShowCloseMonthModal] = useState(false);
 
   if (isLoading) {
     return <div className="text-zinc-400">Loading dashboard...</div>;
@@ -59,11 +64,7 @@ export const Dashboard: React.FC = () => {
     return (bucket.spent_amount / bucket.allocated_amount) * 100;
   };
 
-  const chartData = [
-    { name: 'Needs', spent: needsBucket?.spent_amount || 0, fill: '#10b981' },
-    { name: 'Wants', spent: wantsBucket?.spent_amount || 0, fill: '#facc15' },
-    { name: 'Buffer', spent: bufferBucket?.spent_amount || 0, fill: '#ef4444' },
-  ];
+
 
   return (
     <div className="space-y-6 pb-20">
@@ -72,9 +73,7 @@ export const Dashboard: React.FC = () => {
         <div>
           <div className="flex items-center gap-4">
             <h1 className="text-3xl font-bold tracking-tight text-zinc-50">Dashboard</h1>
-            <Button variant="outline" size="sm" className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300 h-8 text-xs" onClick={() => {
-              if (window.confirm("Are you sure you want to close this month and rollover your buffer to the next month?")) closeMonth();
-            }}>
+            <Button variant="outline" size="sm" className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300 h-8 text-xs" onClick={() => setShowCloseMonthModal(true)}>
               Close Month
             </Button>
           </div>
@@ -182,9 +181,7 @@ export const Dashboard: React.FC = () => {
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="font-semibold text-zinc-300">-₹{tx.amount.toLocaleString('en-IN')}</div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-red-400 hover:bg-zinc-900" onClick={() => {
-                          if (window.confirm("Delete this transaction?")) deleteTransaction(tx.id, tx.bucket_id, tx.amount);
-                        }}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-red-400 hover:bg-zinc-900" onClick={() => setDeleteTxParams({ id: tx.id, bucketId: tx.bucket_id, amount: tx.amount })}>
                           <Trash size={16} />
                         </Button>
                       </div>
@@ -199,30 +196,31 @@ export const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Spending Trends */}
-        <Card className="bg-zinc-900/50 border-zinc-800">
-          <CardHeader>
-            <CardTitle className="text-lg">Spending Trends</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[250px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <XAxis dataKey="name" stroke="#71717a" fontSize={12} tickLine={false} axisLine={false} />
-                  <Tooltip 
-                    cursor={{fill: '#27272a', opacity: 0.4}}
-                    contentStyle={{ backgroundColor: '#09090b', borderColor: '#27272a', borderRadius: '8px' }}
-                    itemStyle={{ color: '#e4e4e7' }}
-                  />
-                  <Bar dataKey="spent" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="space-y-6">
+          <AIInsightsCard />
+          <SavingsGoalsCard />
+        </div>
       </div>
 
       <TransactionDrawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen} />
+
+      <ConfirmModal 
+        open={!!deleteTxParams} 
+        onOpenChange={(o) => !o && setDeleteTxParams(null)}
+        title="Delete Transaction"
+        description="Are you sure you want to delete this transaction? The amount will be refunded to your budget."
+        onConfirm={() => deleteTxParams && deleteTransaction(deleteTxParams.id, deleteTxParams.bucketId, deleteTxParams.amount)}
+      />
+
+      <ConfirmModal 
+        open={showCloseMonthModal} 
+        onOpenChange={setShowCloseMonthModal}
+        title="Close Month"
+        description="Are you sure you want to close this month? This will create a new cycle for the upcoming month and automatically roll over your unused Buffer money into it."
+        confirmText="Yes, Close Month"
+        variant="default"
+        onConfirm={closeMonth}
+      />
     </div>
   );
 };

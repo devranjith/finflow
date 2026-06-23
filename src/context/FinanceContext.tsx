@@ -1,13 +1,14 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from './AuthContext';
-import type { Cycle, Bucket, Transaction, FixedExpense } from '../types/database';
+import type { Cycle, Bucket, Transaction, FixedExpense, SavingsGoal } from '../types/database';
 
 interface FinanceContextType {
   cycle: Cycle | null;
   buckets: Bucket[];
   transactions: Transaction[];
   fixedExpenses: FixedExpense[];
+  savingsGoals: SavingsGoal[];
   isLoading: boolean;
   addTransaction: (bucketId: string, amount: number, description: string) => Promise<void>;
   borrowFromBucket: (fromBucketId: string, toBucketId: string, amount: number) => Promise<void>;
@@ -17,6 +18,9 @@ interface FinanceContextType {
   deleteFixedExpense: (id: string) => Promise<void>;
   deleteTransaction: (id: string, bucketId: string, amount: number) => Promise<void>;
   closeMonth: () => Promise<void>;
+  addSavingsGoal: (name: string, target_amount: number) => Promise<void>;
+  fundSavingsGoal: (id: string, amount: number) => Promise<void>;
+  deleteSavingsGoal: (id: string) => Promise<void>;
 }
 
 const FinanceContext = createContext<FinanceContextType>({
@@ -24,6 +28,7 @@ const FinanceContext = createContext<FinanceContextType>({
   buckets: [],
   transactions: [],
   fixedExpenses: [],
+  savingsGoals: [],
   isLoading: true,
   addTransaction: async () => {},
   borrowFromBucket: async () => {},
@@ -33,6 +38,9 @@ const FinanceContext = createContext<FinanceContextType>({
   deleteFixedExpense: async () => {},
   deleteTransaction: async () => {},
   closeMonth: async () => {},
+  addSavingsGoal: async () => {},
+  fundSavingsGoal: async () => {},
+  deleteSavingsGoal: async () => {},
 });
 
 export const useFinance = () => useContext(FinanceContext);
@@ -43,6 +51,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [buckets, setBuckets] = useState<Bucket[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [fixedExpenses, setFixedExpenses] = useState<FixedExpense[]>([]);
+  const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const currentMonthYear = useMemo(() => {
@@ -56,6 +65,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setBuckets([]);
       setTransactions([]);
       setFixedExpenses([]);
+      setSavingsGoals([]);
       setIsLoading(false);
       return;
     }
@@ -68,6 +78,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         .select('*')
         .eq('user_id', user.id);
       if (feData) setFixedExpenses(feData);
+
+      // Fetch Savings Goals
+      const { data: sgData } = await supabase
+        .from('savings_goals')
+        .select('*')
+        .eq('user_id', user.id);
+      if (sgData) setSavingsGoals(sgData);
 
       // Fetch current cycle
       const { data: cycleData, error: cycleErr } = await supabase
@@ -347,8 +364,57 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  const addSavingsGoal = async (name: string, target_amount: number) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase.from('savings_goals').insert({
+        user_id: user.id,
+        name,
+        target_amount,
+        current_amount: 0
+      });
+      if (error) console.error("Error adding savings goal:", error);
+      else await fetchData();
+    } catch (e) {
+      console.error("Exception adding savings goal:", e);
+    }
+  };
+
+  const fundSavingsGoal = async (id: string, amount: number) => {
+    if (!user) return;
+    try {
+      const goal = savingsGoals.find(g => g.id === id);
+      if (!goal) return;
+      
+      const { error } = await supabase.from('savings_goals').update({
+        current_amount: goal.current_amount + amount
+      }).eq('id', id).eq('user_id', user.id);
+      
+      if (error) console.error("Error funding savings goal:", error);
+      else await fetchData();
+    } catch (e) {
+      console.error("Exception funding savings goal:", e);
+    }
+  };
+
+  const deleteSavingsGoal = async (id: string) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase.from('savings_goals').delete().eq('id', id).eq('user_id', user.id);
+      if (error) console.error("Error deleting savings goal:", error);
+      else await fetchData();
+    } catch (e) {
+      console.error("Exception deleting savings goal:", e);
+    }
+  };
+
   return (
-    <FinanceContext.Provider value={{ cycle, buckets, transactions, fixedExpenses, isLoading, addTransaction, borrowFromBucket, setupMonth, addFixedExpense, editFixedExpense, deleteFixedExpense, deleteTransaction, closeMonth }}>
+    <FinanceContext.Provider value={{ 
+      cycle, buckets, transactions, fixedExpenses, savingsGoals, isLoading, 
+      addTransaction, borrowFromBucket, setupMonth, addFixedExpense, 
+      editFixedExpense, deleteFixedExpense, deleteTransaction, closeMonth,
+      addSavingsGoal, fundSavingsGoal, deleteSavingsGoal 
+    }}>
       {children}
     </FinanceContext.Provider>
   );

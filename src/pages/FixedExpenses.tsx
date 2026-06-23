@@ -5,12 +5,15 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '../components/ui/dialog';
 import { Receipt, Plus, Pencil, Trash } from 'lucide-react';
+import { ConfirmModal } from '../components/ui/confirm-modal';
+import { ScrollArea } from '../components/ui/scroll-area';
 import type { FixedExpense } from '../types/database';
 
 export const FixedExpenses: React.FC = () => {
   const { fixedExpenses, isLoading, addFixedExpense, editFixedExpense, deleteFixedExpense } = useFinance();
   const [isOpen, setIsOpen] = React.useState(false);
   const [editingId, setEditingId] = React.useState<string | null>(null);
+  const [deleteExpenseId, setDeleteExpenseId] = React.useState<string | null>(null);
   const [name, setName] = React.useState('');
   const [amount, setAmount] = React.useState('');
   const [category, setCategory] = React.useState('');
@@ -29,12 +32,6 @@ export const FixedExpenses: React.FC = () => {
     setAmount(expense.amount.toString());
     setCategory(expense.category);
     setIsOpen(true);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this expense?")) {
-      await deleteFixedExpense(id);
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -122,35 +119,45 @@ export const FixedExpenses: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {fixedExpenses.length === 0 ? (
-              <p className="text-zinc-500">No fixed expenses configured.</p>
-            ) : (
-              fixedExpenses.map((expense) => (
-                <div key={expense.id} className="flex justify-between items-center p-4 rounded-lg bg-zinc-950/50 border border-zinc-800/50">
-                  <div>
-                    <h4 className="font-medium text-zinc-200">{expense.name}</h4>
-                    <p className="text-sm text-zinc-500">{expense.category}</p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="font-semibold text-zinc-300">
-                      ₹{expense.amount.toLocaleString('en-IN')}
+          <ScrollArea className="h-[600px] pr-4">
+            <div className="space-y-4">
+              {fixedExpenses.length === 0 ? (
+                <p className="text-zinc-500">No fixed expenses configured.</p>
+              ) : (
+                fixedExpenses.map((expense) => (
+                  <div key={expense.id} className="flex justify-between items-center p-4 rounded-lg bg-zinc-950/50 border border-zinc-800/50">
+                    <div>
+                      <h4 className="font-medium text-zinc-200">{expense.name}</h4>
+                      <p className="text-sm text-zinc-500">{expense.category}</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => handleEditClick(expense)} className="h-8 w-8 text-zinc-400 hover:text-emerald-400">
-                        <Pencil size={16} />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(expense.id)} className="h-8 w-8 text-zinc-400 hover:text-red-400">
-                        <Trash size={16} />
-                      </Button>
+                    <div className="flex items-center gap-4">
+                      <div className="font-semibold text-zinc-300">
+                        ₹{expense.amount.toLocaleString('en-IN')}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => handleEditClick(expense)} className="h-8 w-8 text-zinc-400 hover:text-emerald-400">
+                          <Pencil size={16} />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => setDeleteExpenseId(expense.id)} className="h-8 w-8 text-zinc-400 hover:text-red-400">
+                          <Trash size={16} />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
-            )}
-          </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
         </CardContent>
       </Card>
+
+      <ConfirmModal 
+        open={!!deleteExpenseId} 
+        onOpenChange={(o) => !o && setDeleteExpenseId(null)}
+        title="Delete Fixed Expense"
+        description="Are you sure you want to delete this fixed expense? This will instantly recalculate your remaining available income."
+        onConfirm={() => deleteExpenseId && deleteFixedExpense(deleteExpenseId)}
+      />
     </div>
   );
 };

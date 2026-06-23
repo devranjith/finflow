@@ -42,3 +42,12 @@ export type Transaction = {
   amount: number;
   date: string;
 };
+
+export type SavingsGoal = {
+  id: string;
+  user_id: string;
+  name: string;
+  target_amount: number;
+  current_amount: number;
+  created_at: string;
+};
