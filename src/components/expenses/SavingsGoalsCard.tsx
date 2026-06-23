@@ -126,8 +126,8 @@ export const SavingsGoalsCard: React.FC = () => {
               />
             </div>
             <DialogFooter className="mt-6">
-              <DialogClose asChild>
-                <Button type="button" variant="ghost">Cancel</Button>
+              <DialogClose render={<Button type="button" variant="ghost" />}>
+                Cancel
               </DialogClose>
               <Button type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-white">
                 Create Goal
@@ -160,8 +160,8 @@ export const SavingsGoalsCard: React.FC = () => {
               />
             </div>
             <DialogFooter className="mt-6">
-              <DialogClose asChild>
-                <Button type="button" variant="ghost" onClick={() => setFundingGoalId(null)}>Cancel</Button>
+              <DialogClose render={<Button type="button" variant="ghost" onClick={() => setFundingGoalId(null)} />}>
+                Cancel
               </DialogClose>
               <Button type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-white">
                 Add Funds
