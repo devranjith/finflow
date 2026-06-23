@@ -48,8 +48,8 @@ export const SavingsGoalsCard: React.FC = () => {
 
   return (
     <>
-      <Card className="bg-zinc-900/50 border-zinc-800 flex flex-col max-h-[300px]">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
+      <Card className="bg-zinc-900/50 border-zinc-800 flex flex-col h-full">
+        <CardHeader className="flex flex-row items-center justify-between pb-2 shrink-0">
           <CardTitle className="text-lg flex items-center gap-2">
             <Target size={18} className="text-blue-400" />
             Savings Goals

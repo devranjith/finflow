@@ -67,7 +67,7 @@ export const Dashboard: React.FC = () => {
 
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="flex flex-col h-[calc(100vh-4rem)] space-y-6">
       {/* Header & Alerts */}
       <div className="flex justify-between items-end mb-8">
         <div>
@@ -156,14 +156,14 @@ export const Dashboard: React.FC = () => {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1 min-h-0 pb-4">
         {/* Transactions List */}
-        <Card className="md:col-span-2 bg-zinc-900/50 border-zinc-800">
-          <CardHeader>
+        <Card className="md:col-span-2 bg-zinc-900/50 border-zinc-800 flex flex-col">
+          <CardHeader className="shrink-0">
             <CardTitle className="text-lg">Recent Transactions</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[300px] pr-4">
+          <CardContent className="flex-1 min-h-0">
+            <ScrollArea className="h-full pr-4">
               <div className="space-y-4">
                 {transactions.slice(0, 50).map((tx) => {
                   const bucket = buckets.find(b => b.id === tx.bucket_id);
@@ -196,9 +196,13 @@ export const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        <div className="space-y-6">
-          <AIInsightsCard />
-          <SavingsGoalsCard />
+        <div className="space-y-6 flex flex-col min-h-0">
+          <div className="shrink-0">
+            <AIInsightsCard />
+          </div>
+          <div className="flex-1 min-h-0 flex flex-col">
+            <SavingsGoalsCard />
+          </div>
         </div>
       </div>
 
