@@ -16,10 +16,9 @@ export async function askAdvisor(
     wantsRemaining: number;
     bufferRemaining: number;
     recentTransactions: string[];
-  }
+  },
+  apiKey?: string | null
 ): Promise<string> {
-  const apiKey = localStorage.getItem('finflow_gemini_key');
-  
   if (!apiKey) {
     throw new Error('API_KEY_MISSING');
   }

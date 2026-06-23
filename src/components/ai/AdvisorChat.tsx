@@ -13,7 +13,7 @@ interface ChatMessage {
 }
 
 export const AdvisorChat: React.FC = () => {
-  const { cycle, buckets, transactions } = useFinance();
+  const { cycle, buckets, transactions, geminiApiKey } = useFinance();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([{
     id: '1',
@@ -54,7 +54,7 @@ export const AdvisorChat: React.FC = () => {
         recentTransactions: transactions.slice(0, 5).map(t => `${t.description}: ₹${t.amount}`)
       };
 
-      const aiResponse = await askAdvisor(userMessage, contextData);
+      const aiResponse = await askAdvisor(userMessage, contextData, geminiApiKey);
       setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: aiResponse }]);
     } catch (error: any) {
       const isMissingKey = error.message === 'API_KEY_MISSING';

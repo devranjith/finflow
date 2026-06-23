@@ -4,25 +4,22 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { KeyRound, CheckCircle2 } from 'lucide-react';
+import { useFinance } from '../context/FinanceContext';
 
 export const Settings: React.FC = () => {
+  const { geminiApiKey, updateGeminiKey } = useFinance();
   const [apiKey, setApiKey] = useState('');
   const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
-    const savedKey = localStorage.getItem('finflow_gemini_key');
-    if (savedKey) {
-      setApiKey(savedKey);
+    if (geminiApiKey) {
+      setApiKey(geminiApiKey);
     }
-  }, []);
+  }, [geminiApiKey]);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (apiKey) {
-      localStorage.setItem('finflow_gemini_key', apiKey.trim());
-    } else {
-      localStorage.removeItem('finflow_gemini_key');
-    }
+    await updateGeminiKey(apiKey.trim());
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 3000);
   };
@@ -54,11 +51,7 @@ export const Settings: React.FC = () => {
                 value={apiKey}
                 onChange={(e) => {
                   setApiKey(e.target.value);
-                  if (e.target.value) {
-                    localStorage.setItem('finflow_gemini_key', e.target.value.trim());
-                  } else {
-                    localStorage.removeItem('finflow_gemini_key');
-                  }
+                  updateGeminiKey(e.target.value.trim());
                 }}
                 className="bg-zinc-950 border-zinc-800 font-mono"
               />

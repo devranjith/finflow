@@ -21,6 +21,8 @@ interface FinanceContextType {
   addSavingsGoal: (name: string, target_amount: number) => Promise<void>;
   fundSavingsGoal: (id: string, amount: number) => Promise<void>;
   deleteSavingsGoal: (id: string) => Promise<void>;
+  geminiApiKey: string | null;
+  updateGeminiKey: (key: string) => Promise<void>;
 }
 
 const FinanceContext = createContext<FinanceContextType>({
@@ -41,6 +43,8 @@ const FinanceContext = createContext<FinanceContextType>({
   addSavingsGoal: async () => {},
   fundSavingsGoal: async () => {},
   deleteSavingsGoal: async () => {},
+  geminiApiKey: null,
+  updateGeminiKey: async () => {},
 });
 
 export const useFinance = () => useContext(FinanceContext);
@@ -52,6 +56,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [fixedExpenses, setFixedExpenses] = useState<FixedExpense[]>([]);
   const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
+  const [geminiApiKey, setGeminiApiKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const currentMonthYear = useMemo(() => {
@@ -85,6 +90,14 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         .select('*')
         .eq('user_id', user.id);
       if (sgData) setSavingsGoals(sgData);
+
+      // Fetch Profile for API Key
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('gemini_api_key')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (profileData) setGeminiApiKey(profileData.gemini_api_key);
 
       // Fetch current cycle
       const { data: cycleData, error: cycleErr } = await supabase
@@ -408,12 +421,27 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  const updateGeminiKey = async (key: string) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase.from('profiles').update({ gemini_api_key: key }).eq('id', user.id);
+      if (error) {
+        console.error("Error updating Gemini key:", error);
+      } else {
+        setGeminiApiKey(key);
+      }
+    } catch (e) {
+      console.error("Exception updating Gemini key:", e);
+    }
+  };
+
   return (
     <FinanceContext.Provider value={{ 
       cycle, buckets, transactions, fixedExpenses, savingsGoals, isLoading, 
       addTransaction, borrowFromBucket, setupMonth, addFixedExpense, 
       editFixedExpense, deleteFixedExpense, deleteTransaction, closeMonth,
-      addSavingsGoal, fundSavingsGoal, deleteSavingsGoal 
+      addSavingsGoal, fundSavingsGoal, deleteSavingsGoal,
+      geminiApiKey, updateGeminiKey
     }}>
       {children}
     </FinanceContext.Provider>

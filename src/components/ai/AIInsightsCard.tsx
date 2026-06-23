@@ -5,13 +5,20 @@ import { useFinance } from '../../context/FinanceContext';
 import { askAdvisor } from '../../lib/ai';
 
 export const AIInsightsCard: React.FC = () => {
-  const { cycle, buckets, transactions } = useFinance();
+  const { cycle, buckets, transactions, geminiApiKey } = useFinance();
   const [insights, setInsights] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchInsights = async () => {
       if (!cycle) return;
+      
+      if (!geminiApiKey) {
+        setInsights("💡 Add your Gemini API key in Settings to unlock AI-powered financial insights here!");
+        setIsLoading(false);
+        return;
+      }
+      
       setIsLoading(true);
       try {
         const needsBucket = buckets.find(b => b.bucket_type === 'NEEDS');
@@ -29,10 +36,11 @@ export const AIInsightsCard: React.FC = () => {
 
         const prompt = `Based on my current financial context, generate exactly 3 short, punchy, and actionable bullet points summarizing my financial health or spending habits. Do not use markdown bolding or headers. Start each bullet with a relevant emoji. Make it sound like a premium financial advisor.`;
 
-        const result = await askAdvisor(prompt, contextData);
+        const result = await askAdvisor(prompt, contextData, geminiApiKey);
         setInsights(result);
-      } catch (e) {
-        setInsights("💡 Add your Gemini API key in Settings to unlock AI-powered financial insights here!");
+      } catch (e: any) {
+        console.error("Insights Error:", e);
+        setInsights("⚠️ Unable to fetch insights. Please check if your Gemini API key is correct and valid in Settings.");
       } finally {
         setIsLoading(false);
       }

@@ -4,6 +4,7 @@ export type Profile = {
   name: string | null;
   dependents: number;
   default_income: number;
+  gemini_api_key?: string | null;
   created_at: string;
 };
 
