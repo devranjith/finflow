@@ -50,14 +50,14 @@ export const AIInsightsCard: React.FC = () => {
   }, [cycle, buckets, transactions]);
 
   return (
-    <Card className="bg-zinc-900/50 border-zinc-800 bg-gradient-to-br from-zinc-900/50 to-emerald-900/10">
+    <Card className="bg-zinc-900/50 border-zinc-800 bg-gradient-to-br from-zinc-900/50 to-emerald-900/10 h-full flex flex-col">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg flex items-center gap-2 text-emerald-400">
           <Sparkles size={18} />
           AI Insights
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 overflow-hidden flex flex-col">
         {isLoading ? (
           <div className="space-y-3 animate-pulse mt-2">
             <div className="h-4 bg-zinc-800 rounded w-full"></div>
@@ -65,7 +65,7 @@ export const AIInsightsCard: React.FC = () => {
             <div className="h-4 bg-zinc-800 rounded w-4/6"></div>
           </div>
         ) : (
-          <div className="max-h-[160px] overflow-y-auto pr-2 mt-2 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto pr-2 mt-2 custom-scrollbar">
             <div className="text-sm text-zinc-300 space-y-3 whitespace-pre-line leading-relaxed">
               {insights}
             </div>

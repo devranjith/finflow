@@ -19,6 +19,7 @@ export const Dashboard: React.FC = () => {
   
   const [deleteTxParams, setDeleteTxParams] = useState<{id: string, bucketId: string, amount: number} | null>(null);
   const [showCloseMonthModal, setShowCloseMonthModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'goals' | 'ai'>('goals');
 
   if (isLoading) {
     return <div className="text-zinc-400">Loading dashboard...</div>;
@@ -196,12 +197,28 @@ export const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        <div className="space-y-6 flex flex-col min-h-0">
-          <div className="shrink-0">
-            <AIInsightsCard />
+        <div className="flex flex-col min-h-0 space-y-4">
+          <div className="flex bg-zinc-900/80 p-1 rounded-lg border border-zinc-800 shrink-0">
+            <button
+              onClick={() => setActiveTab('goals')}
+              className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === 'goals' ? 'bg-zinc-800 text-emerald-400 shadow-sm' : 'text-zinc-400 hover:text-zinc-200'}`}
+            >
+              Savings Goals
+            </button>
+            <button
+              onClick={() => setActiveTab('ai')}
+              className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === 'ai' ? 'bg-zinc-800 text-emerald-400 shadow-sm' : 'text-zinc-400 hover:text-zinc-200'}`}
+            >
+              AI Insights
+            </button>
           </div>
-          <div className="flex-1 min-h-0 flex flex-col">
-            <SavingsGoalsCard />
+          <div className="flex-1 min-h-0 relative">
+            <div className={`absolute inset-0 flex flex-col transition-opacity duration-200 ${activeTab === 'goals' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+              <SavingsGoalsCard />
+            </div>
+            <div className={`absolute inset-0 flex flex-col transition-opacity duration-200 ${activeTab === 'ai' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+              <AIInsightsCard />
+            </div>
           </div>
         </div>
       </div>
