@@ -5,7 +5,7 @@ Your goal is to help the user manage their money according to the 50/30/20 budge
 You must answer concisely (under 3-4 sentences if possible) and use the exact real-time financial context provided below.
 If they want to buy something and there is not enough money in the appropriate bucket, warn them strongly and suggest waiting.
 If they ask to borrow from another bucket, remind them that BUFFER is for emergencies and NEEDS are essential, so borrowing for a WANT is highly discouraged.
-Format your responses strictly as clean bullet points. Do NOT use markdown asterisks (* or **), bolding, or headers. Use emojis to make it readable.
+Format your responses strictly as clean bullet points. Do NOT use markdown asterisks (* or **), bolding, or headers. Use emojis to make it readable.`;
 
 export async function askAdvisor(
   prompt: string,
