@@ -434,11 +434,39 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const deleteSavingsGoal = async (id: string) => {
-    if (!user) return;
+    if (!user || !cycle) return;
     try {
+      const goal = savingsGoals.find(g => g.id === id);
+      
       const { error } = await supabase.from('savings_goals').delete().eq('id', id).eq('user_id', user.id);
-      if (error) console.error("Error deleting savings goal:", error);
-      else await fetchData();
+      
+      if (error) {
+        console.error("Error deleting savings goal:", error);
+        return;
+      }
+
+      // Refund the saved amount back to the Buffer bucket
+      if (goal && goal.current_amount > 0) {
+        const bufferBucket = buckets.find(b => b.bucket_type === 'BUFFER');
+        if (bufferBucket) {
+          const { error: txError } = await supabase.from('transactions').insert({
+            cycle_id: cycle.id,
+            bucket_id: bufferBucket.id,
+            amount: -goal.current_amount,
+            description: `Refunded from deleted goal: ${goal.name}`
+          });
+
+          if (!txError) {
+            await supabase.from('buckets').update({
+              spent_amount: bufferBucket.spent_amount - goal.current_amount
+            }).eq('id', bufferBucket.id);
+          } else {
+            console.error("Error adding refund transaction:", txError);
+          }
+        }
+      }
+
+      await fetchData();
     } catch (e) {
       console.error("Exception deleting savings goal:", e);
     }

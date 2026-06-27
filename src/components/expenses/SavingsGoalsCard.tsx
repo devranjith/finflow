@@ -175,7 +175,7 @@ export const SavingsGoalsCard: React.FC = () => {
         open={!!deleteGoalId} 
         onOpenChange={(o) => !o && setDeleteGoalId(null)}
         title="Delete Savings Goal"
-        description="Are you sure you want to delete this goal? The funds will remain in your overall Buffer, but the tracking for this specific goal will be removed."
+        description="Are you sure you want to delete this goal? Any money you saved towards this goal will be automatically refunded back into your Buffer bucket."
         onConfirm={() => deleteGoalId && deleteSavingsGoal(deleteGoalId)}
       />
     </>
