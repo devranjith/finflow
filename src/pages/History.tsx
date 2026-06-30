@@ -206,6 +206,7 @@ export const History: React.FC = () => {
                 )}
               </div>
             </ScrollArea>
+          )}
           </CardContent>
         </div>
 
