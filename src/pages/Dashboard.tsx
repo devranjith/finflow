@@ -9,8 +9,9 @@ import { TransactionDrawer } from '../components/expenses/TransactionDrawer';
 import { ScrollArea } from '../components/ui/scroll-area';
 import { ConfirmModal } from '../components/ui/confirm-modal';
 import { AIInsightsCard } from '../components/ai/AIInsightsCard';
-import { SavingsGoalsCard } from '../components/expenses/SavingsGoalsCard';
+import { SavingsGoalsModal } from '../components/expenses/SavingsGoalsCard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
+import { Target, Lightbulb } from 'lucide-react';
 
 
 
@@ -23,6 +24,7 @@ export const Dashboard: React.FC = () => {
   const [showCloseMonthModal, setShowCloseMonthModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'goals' | 'ai'>('goals');
   const [isEditIncomeOpen, setIsEditIncomeOpen] = useState(false);
+  const [isSavingsModalOpen, setIsSavingsModalOpen] = useState(false);
   const [editIncomeValue, setEditIncomeValue] = useState('');
 
   if (isLoading) {
@@ -226,7 +228,11 @@ export const Dashboard: React.FC = () => {
           </div>
           <div className="flex-1 min-h-0 relative">
             <div className={`absolute inset-0 flex flex-col transition-opacity duration-200 ${activeTab === 'goals' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-              <SavingsGoalsCard />
+              <Card className="bg-zinc-900/50 border-zinc-800 flex flex-col h-full justify-center items-center cursor-pointer hover:bg-zinc-800/50 transition-colors" onClick={() => setIsSavingsModalOpen(true)}>
+                <Target size={32} className="text-blue-400 mb-3" />
+                <h3 className="text-lg font-medium text-zinc-200">View Savings Goals</h3>
+                <p className="text-sm text-zinc-500 mt-1">{savingsGoals.length} Active Goals</p>
+              </Card>
             </div>
             <div className={`absolute inset-0 flex flex-col transition-opacity duration-200 ${activeTab === 'ai' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
               <AIInsightsCard />
@@ -234,6 +240,8 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <SavingsGoalsModal open={isSavingsModalOpen} onOpenChange={setIsSavingsModalOpen} />
 
       <TransactionDrawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen} />
 

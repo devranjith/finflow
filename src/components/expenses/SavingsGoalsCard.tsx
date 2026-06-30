@@ -9,7 +9,7 @@ import { Progress } from '../ui/progress';
 import { ScrollArea } from '../ui/scroll-area';
 import { ConfirmModal } from '../ui/confirm-modal';
 
-export const SavingsGoalsCard: React.FC = () => {
+export const SavingsGoalsModal: React.FC<{ open: boolean; onOpenChange: (open: boolean) => void }> = ({ open, onOpenChange }) => {
   const { savingsGoals, addSavingsGoal, fundSavingsGoal, deleteSavingsGoal, buckets } = useFinance();
   
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -50,52 +50,58 @@ export const SavingsGoalsCard: React.FC = () => {
 
   return (
     <>
-      <Card className="bg-zinc-900/50 border-zinc-800 flex flex-col h-full">
-        <CardHeader className="flex flex-row items-center justify-between pb-2 shrink-0">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Target size={18} className="text-blue-400" />
-            Savings Goals
-          </CardTitle>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-zinc-50" onClick={() => setIsAddModalOpen(true)}>
-            <Plus size={18} />
-          </Button>
-        </CardHeader>
-        <CardContent className="flex-1 overflow-hidden flex flex-col">
+      <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-50 sm:max-w-[500px] flex flex-col max-h-[85vh]">
+        <DialogHeader className="shrink-0">
+          <DialogTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Target size={20} className="text-blue-400" />
+              Savings Goals
+            </div>
+            <Button variant="ghost" size="sm" className="h-8 gap-1 text-zinc-400 hover:text-zinc-50 mr-6" onClick={() => setIsAddModalOpen(true)}>
+              <Plus size={16} />
+              <span className="text-xs">Add Goal</span>
+            </Button>
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0 mt-2">
           <ScrollArea className="flex-1 pr-4">
             <div className="space-y-4">
               {savingsGoals.map(goal => {
                 const percent = Math.min(100, (goal.current_amount / goal.target_amount) * 100);
 
                 return (
-                  <div key={goal.id} className="p-3 rounded-lg bg-zinc-950/50 border border-zinc-800/50 group relative">
-                    <div className="flex justify-between items-end mb-2">
+                  <div key={goal.id} className="p-4 rounded-lg bg-zinc-900 border border-zinc-800 group relative">
+                    <div className="flex justify-between items-end mb-3">
                       <div>
-                        <h4 className="text-sm font-medium text-zinc-200">{goal.name}</h4>
-                        <p className="text-xs text-zinc-500 mt-0.5">₹{goal.current_amount.toLocaleString()} / ₹{goal.target_amount.toLocaleString()}</p>
+                        <h4 className="font-medium text-zinc-100">{goal.name}</h4>
+                        <p className="text-sm text-zinc-400 mt-1">₹{goal.current_amount.toLocaleString()} / ₹{goal.target_amount.toLocaleString()}</p>
                       </div>
-                      <div className="text-xs font-semibold text-blue-400">{percent.toFixed(0)}%</div>
+                      <div className="text-sm font-bold text-blue-400">{percent.toFixed(0)}%</div>
                     </div>
-                    <Progress value={percent} className="h-1.5 bg-zinc-800" indicatorClassName="bg-blue-500" />
+                    <Progress value={percent} className="h-2 bg-zinc-950" indicatorClassName="bg-blue-500" />
                     
                     {/* Hover Actions */}
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                      <Button variant="outline" size="sm" className="h-6 text-[10px] px-2 bg-zinc-900 border-zinc-700" onClick={() => setFundingGoalId(goal.id)}>
+                    <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                      <Button variant="outline" size="sm" className="h-7 text-xs px-3 bg-zinc-950 border-zinc-700 hover:bg-zinc-800" onClick={() => setFundingGoalId(goal.id)}>
                         Fund
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-500 hover:text-red-400 hover:bg-zinc-800" onClick={() => setDeleteGoalId(goal.id)}>
-                        <Trash size={12} />
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-zinc-500 hover:text-red-400 hover:bg-zinc-950" onClick={() => setDeleteGoalId(goal.id)}>
+                        <Trash size={14} />
                       </Button>
                     </div>
                   </div>
                 );
               })}
               {savingsGoals.length === 0 && (
-                <div className="text-center text-zinc-500 py-4 text-sm">No savings goals yet. Create one!</div>
+                <div className="text-center text-zinc-500 py-12">No savings goals yet. Create one!</div>
               )}
             </div>
           </ScrollArea>
-        </CardContent>
-      </Card>
+        </div>
+      </DialogContent>
+    </Dialog>
 
       {/* Add Goal Modal */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
