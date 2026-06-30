@@ -11,6 +11,7 @@ import { ConfirmModal } from '../components/ui/confirm-modal';
 import { AIInsightsCard } from '../components/ai/AIInsightsCard';
 import { SavingsGoalsModal } from '../components/expenses/SavingsGoalsCard';
 import { Target } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
 
 
 
