@@ -10,13 +10,12 @@ import { ScrollArea } from '../components/ui/scroll-area';
 import { ConfirmModal } from '../components/ui/confirm-modal';
 import { AIInsightsCard } from '../components/ai/AIInsightsCard';
 import { SavingsGoalsModal } from '../components/expenses/SavingsGoalsCard';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
-import { Target, Lightbulb } from 'lucide-react';
+import { Target } from 'lucide-react';
 
 
 
 export const Dashboard: React.FC = () => {
-  const { cycle, buckets, transactions, isLoading, setupMonth, closeMonth, deleteTransaction, editIncome } = useFinance();
+  const { cycle, buckets, transactions, savingsGoals, isLoading, setupMonth, closeMonth, deleteTransaction, editIncome } = useFinance();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [incomeInput, setIncomeInput] = useState('');
   
