@@ -88,17 +88,6 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Warning Banner (Example Logic) */}
-      {calculatePercentage(needsBucket) > 85 && (
-        <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl flex items-start gap-3">
-          <AlertCircle size={20} className="mt-0.5 shrink-0" />
-          <div>
-            <h4 className="font-medium">Low Balance Alert</h4>
-            <p className="text-sm mt-1 opacity-90">Your 'Needs' bucket is running very low. Consider pausing discretionary spending.</p>
-          </div>
-        </div>
-      )}
-
       {/* Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-zinc-900/50 border-zinc-800">
@@ -111,17 +100,25 @@ export const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
         
-        <Card className="bg-zinc-900/50 border-zinc-800 cursor-pointer hover:bg-zinc-800/50 transition-colors" onClick={() => setIsDrawerOpen(true)}>
+        <Card className="bg-zinc-900/50 border-zinc-800 cursor-pointer hover:bg-zinc-800/50 transition-colors relative" onClick={() => setIsDrawerOpen(true)}>
           <CardHeader className="pb-2 flex flex-row items-start justify-between space-y-0">
             <div>
-              <CardTitle className="text-sm font-medium text-zinc-400">Needs</CardTitle>
+              <CardTitle className="text-sm font-medium text-zinc-400 flex items-center gap-2">
+                Needs
+                {calculatePercentage(needsBucket) > 85 && (
+                  <span className="flex items-center gap-1 text-[10px] font-medium text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded-full">
+                    <AlertCircle size={10} />
+                    Low
+                  </span>
+                )}
+              </CardTitle>
               <p className="text-[10px] text-zinc-500 mt-1 font-normal">Groceries, rent, utilities</p>
             </div>
             <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">₹{calculateRemaining(needsBucket).toLocaleString('en-IN')}</div>
-            <Progress value={calculatePercentage(needsBucket)} className="h-1 mt-3 bg-zinc-800" indicatorClassName="bg-emerald-500" />
+            <Progress value={calculatePercentage(needsBucket)} className="h-1 mt-3 bg-zinc-800" indicatorClassName={calculatePercentage(needsBucket) > 85 ? "bg-red-500" : "bg-emerald-500"} />
             <p className="text-xs text-zinc-500 mt-2">of ₹{needsBucket?.allocated_amount.toLocaleString('en-IN')}</p>
           </CardContent>
         </Card>

@@ -18,6 +18,7 @@ export const History: React.FC = () => {
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterMonth, setFilterMonth] = useState('all');
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -57,10 +58,14 @@ export const History: React.FC = () => {
     fetchHistory();
   }, [user]);
 
-  const filteredItems = historyItems.filter(item => 
-    item.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    item.bucket_type.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const uniqueMonths = Array.from(new Set(historyItems.map(item => item.month_year))).sort((a, b) => b.localeCompare(a));
+
+  const filteredItems = historyItems.filter(item => {
+    const matchesSearch = item.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          item.bucket_type.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesMonth = filterMonth === 'all' || item.month_year === filterMonth;
+    return matchesSearch && matchesMonth;
+  });
 
   const exportCSV = () => {
     if (historyItems.length === 0) return;
@@ -103,16 +108,26 @@ export const History: React.FC = () => {
       </div>
 
       <Card className="bg-zinc-900/50 border-zinc-800 flex flex-col flex-1 min-h-0">
-        <CardHeader className="pb-4 shrink-0">
-          <div className="relative">
+        <CardHeader className="pb-4 shrink-0 flex flex-row items-center gap-4 space-y-0">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
             <Input 
               placeholder="Search transactions..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-zinc-950 border-zinc-800 text-zinc-100 placeholder:text-zinc-500"
+              className="pl-10 bg-zinc-950 border-zinc-800 text-zinc-100 placeholder:text-zinc-500 w-full"
             />
           </div>
+          <select
+            value={filterMonth}
+            onChange={(e) => setFilterMonth(e.target.value)}
+            className="bg-zinc-950 border border-zinc-800 text-zinc-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 min-w-[140px]"
+          >
+            <option value="all">All Months</option>
+            {uniqueMonths.map(m => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
         </CardHeader>
         <CardContent className="flex-1 min-h-0">
           {isLoading ? (

@@ -23,6 +23,8 @@ interface FinanceContextType {
   deleteSavingsGoal: (id: string) => Promise<void>;
   geminiApiKey: string | null;
   updateGeminiKey: (key: string) => Promise<void>;
+  currentMonthYear: string;
+  setCurrentMonthYear: (monthYear: string) => void;
 }
 
 const FinanceContext = createContext<FinanceContextType>({
@@ -45,6 +47,8 @@ const FinanceContext = createContext<FinanceContextType>({
   deleteSavingsGoal: async () => {},
   geminiApiKey: null,
   updateGeminiKey: async () => {},
+  currentMonthYear: '',
+  setCurrentMonthYear: () => {},
 });
 
 export const useFinance = () => useContext(FinanceContext);
@@ -59,10 +63,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [geminiApiKey, setGeminiApiKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const currentMonthYear = useMemo(() => {
+  const [currentMonthYear, setCurrentMonthYear] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  }, []);
+  });
 
   const fetchData = async () => {
     if (!user) {
@@ -251,10 +255,23 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const bufferBucket = buckets.find(b => b.bucket_type === 'BUFFER');
       const rolloverAmount = bufferBucket ? (bufferBucket.allocated_amount - bufferBucket.spent_amount) : 0;
       
-      // Calculate next month string
-      const now = new Date();
-      const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      const nextMonthYear = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}`;
+      // Calculate next month string based on the CURRENT cycle's month_year
+      const [year, month] = cycle.month_year.split('-').map(Number);
+      const nextMonthDate = new Date(year, month - 1 + 1, 1);
+      const nextMonthYear = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, '0')}`;
+
+      // Check if it already exists
+      const { data: existingCycle } = await supabase.from('cycles')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('month_year', nextMonthYear)
+        .maybeSingle();
+
+      if (existingCycle) {
+        alert("The next month's cycle has already been created!");
+        setIsLoading(false);
+        return;
+      }
 
       // Insert new cycle carrying over income/fixed, but with added rollover buffer logic
       const totalFixed = fixedExpenses.reduce((acc, exp) => acc + exp.amount, 0);
@@ -281,7 +298,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           { cycle_id: newCycle.id, bucket_type: 'WANTS', allocated_amount: wantsAmount },
           { cycle_id: newCycle.id, bucket_type: 'BUFFER', allocated_amount: bufferAmount },
         ]);
-        alert("Month closed and buffer rolled over to next month! It will become visible on the 1st.");
+        alert("Month closed and buffer rolled over to next month! Switching you to the new month now.");
+        setCurrentMonthYear(nextMonthYear);
       }
     } catch (e) {
       console.error("Exception closing month:", e);
@@ -492,7 +510,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       addTransaction, borrowFromBucket, setupMonth, addFixedExpense, 
       editFixedExpense, deleteFixedExpense, deleteTransaction, closeMonth,
       addSavingsGoal, fundSavingsGoal, deleteSavingsGoal,
-      geminiApiKey, updateGeminiKey
+      geminiApiKey, updateGeminiKey, currentMonthYear, setCurrentMonthYear
     }}>
       {children}
     </FinanceContext.Provider>
