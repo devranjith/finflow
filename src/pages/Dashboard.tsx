@@ -4,22 +4,26 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Progress } from '../components/ui/progress';
-import { AlertCircle, IndianRupee, Trash } from 'lucide-react';
+import { AlertCircle, IndianRupee, Trash, Edit2 } from 'lucide-react';
 import { TransactionDrawer } from '../components/expenses/TransactionDrawer';
 import { ScrollArea } from '../components/ui/scroll-area';
 import { ConfirmModal } from '../components/ui/confirm-modal';
 import { AIInsightsCard } from '../components/ai/AIInsightsCard';
 import { SavingsGoalsCard } from '../components/expenses/SavingsGoalsCard';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
+
 
 
 export const Dashboard: React.FC = () => {
-  const { cycle, buckets, transactions, isLoading, setupMonth, closeMonth, deleteTransaction } = useFinance();
+  const { cycle, buckets, transactions, isLoading, setupMonth, closeMonth, deleteTransaction, editIncome } = useFinance();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [incomeInput, setIncomeInput] = useState('');
   
   const [deleteTxParams, setDeleteTxParams] = useState<{id: string, bucketId: string, amount: number} | null>(null);
   const [showCloseMonthModal, setShowCloseMonthModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'goals' | 'ai'>('goals');
+  const [isEditIncomeOpen, setIsEditIncomeOpen] = useState(false);
+  const [editIncomeValue, setEditIncomeValue] = useState('');
 
   if (isLoading) {
     return <div className="text-zinc-400">Loading dashboard...</div>;
@@ -90,9 +94,20 @@ export const Dashboard: React.FC = () => {
 
       {/* Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-zinc-900/50 border-zinc-800">
-          <CardHeader className="pb-2">
+        <Card className="bg-zinc-900/50 border-zinc-800 relative group">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm font-medium text-zinc-400">Total Income</CardTitle>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-6 w-6 text-zinc-500 hover:text-zinc-300 opacity-0 group-hover:opacity-100 transition-opacity" 
+              onClick={() => {
+                setEditIncomeValue(cycle.total_income.toString());
+                setIsEditIncomeOpen(true);
+              }}
+            >
+              <Edit2 size={12} />
+            </Button>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">₹{cycle.total_income.toLocaleString('en-IN')}</div>
@@ -239,6 +254,42 @@ export const Dashboard: React.FC = () => {
         variant="default"
         onConfirm={closeMonth}
       />
+
+      <Dialog open={isEditIncomeOpen} onOpenChange={setIsEditIncomeOpen}>
+        <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-50 sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Total Income</DialogTitle>
+            <DialogDescription className="text-zinc-400 mt-1">
+              Updating your income will recalculate your buckets, but it will preserve any rollover buffer you had from last month.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input 
+              type="number" 
+              value={editIncomeValue} 
+              onChange={(e) => setEditIncomeValue(e.target.value)}
+              className="bg-zinc-900 border-zinc-800 text-zinc-100"
+              placeholder="Total Income"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" className="border-zinc-800 bg-transparent hover:bg-zinc-900 text-zinc-300" onClick={() => setIsEditIncomeOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              className="bg-emerald-600 hover:bg-emerald-500 text-white"
+              onClick={() => {
+                if (editIncomeValue) {
+                  editIncome(Number(editIncomeValue));
+                  setIsEditIncomeOpen(false);
+                }
+              }}
+            >
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -13,12 +13,22 @@ type HistoryItem = Transaction & {
   month_year: string;
 };
 
+type CycleSummary = {
+  id: string;
+  month_year: string;
+  total_income: number;
+  total_spent: number;
+  unspent_buffer: number;
+};
+
 export const History: React.FC = () => {
   const { user } = useAuth();
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
+  const [cycleSummaries, setCycleSummaries] = useState<CycleSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterMonth, setFilterMonth] = useState('all');
+  const [activeTab, setActiveTab] = useState<'transactions' | 'summaries'>('transactions');
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -26,13 +36,13 @@ export const History: React.FC = () => {
       setIsLoading(true);
       try {
         // 1. Fetch all cycles for user
-        const { data: cycles } = await supabase.from('cycles').select('id, month_year').eq('user_id', user.id);
+        const { data: cycles } = await supabase.from('cycles').select('*').eq('user_id', user.id);
         if (!cycles || cycles.length === 0) return;
         
         const cycleIds = cycles.map(c => c.id);
 
         // 2. Fetch all buckets for those cycles
-        const { data: buckets } = await supabase.from('buckets').select('id, bucket_type').in('cycle_id', cycleIds);
+        const { data: buckets } = await supabase.from('buckets').select('*').in('cycle_id', cycleIds);
         
         // 3. Fetch all transactions for those cycles
         const { data: transactions } = await supabase.from('transactions').select('*').in('cycle_id', cycleIds).order('date', { ascending: false });
@@ -48,6 +58,23 @@ export const History: React.FC = () => {
             };
           });
           setHistoryItems(items);
+
+          const summaries: CycleSummary[] = cycles.map(cycle => {
+            const cycleBuckets = buckets.filter(b => b.cycle_id === cycle.id);
+            const totalSpent = cycleBuckets.reduce((acc, b) => acc + b.spent_amount, 0);
+            const bufferBucket = cycleBuckets.find(b => b.bucket_type === 'BUFFER');
+            const unspentBuffer = bufferBucket ? (bufferBucket.allocated_amount - bufferBucket.spent_amount) : 0;
+            
+            return {
+              id: cycle.id,
+              month_year: cycle.month_year,
+              total_income: cycle.total_income,
+              total_spent: totalSpent,
+              unspent_buffer: unspentBuffer
+            };
+          }).sort((a, b) => b.month_year.localeCompare(a.month_year));
+          
+          setCycleSummaries(summaries);
         }
       } catch (e) {
         console.error('Error fetching history:', e);
@@ -107,8 +134,25 @@ export const History: React.FC = () => {
         </Button>
       </div>
 
-      <Card className="bg-zinc-900/50 border-zinc-800 flex flex-col flex-1 min-h-0">
-        <CardHeader className="pb-4 shrink-0 flex flex-row items-center gap-4 space-y-0">
+      <div className="flex bg-zinc-900/80 p-1 rounded-lg border border-zinc-800 shrink-0 mx-auto w-full max-w-sm mb-4">
+        <button
+          onClick={() => setActiveTab('transactions')}
+          className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'transactions' ? 'bg-zinc-800 text-emerald-400 shadow-sm' : 'text-zinc-400 hover:text-zinc-200'}`}
+        >
+          Transactions
+        </button>
+        <button
+          onClick={() => setActiveTab('summaries')}
+          className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'summaries' ? 'bg-zinc-800 text-emerald-400 shadow-sm' : 'text-zinc-400 hover:text-zinc-200'}`}
+        >
+          Monthly Summaries
+        </button>
+      </div>
+
+      <Card className="bg-zinc-900/50 border-zinc-800 flex flex-col flex-1 min-h-0 relative overflow-hidden">
+        {/* TRANSACTIONS TAB */}
+        <div className={`absolute inset-0 flex flex-col transition-opacity duration-200 ${activeTab === 'transactions' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+          <CardHeader className="pb-4 shrink-0 flex flex-row items-center gap-4 space-y-0">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
             <Input 
@@ -162,8 +206,47 @@ export const History: React.FC = () => {
                 )}
               </div>
             </ScrollArea>
-          )}
-        </CardContent>
+          </CardContent>
+        </div>
+
+        {/* SUMMARIES TAB */}
+        <div className={`absolute inset-0 flex flex-col transition-opacity duration-200 ${activeTab === 'summaries' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+          <CardHeader className="pb-4 shrink-0">
+            <h2 className="text-xl font-semibold text-zinc-100">Monthly Leftovers & Savings</h2>
+            <p className="text-sm text-zinc-400 mt-1">Track how much unspent money you rolled over at the end of each month.</p>
+          </CardHeader>
+          <CardContent className="flex-1 min-h-0">
+            <ScrollArea className="h-full pr-4">
+              <div className="space-y-4">
+                {cycleSummaries.map(summary => (
+                  <div key={summary.id} className="p-5 rounded-lg bg-zinc-950/50 border border-zinc-800/50">
+                    <div className="flex items-center justify-between mb-4 pb-4 border-b border-zinc-800/50">
+                      <h3 className="text-lg font-semibold text-zinc-100">{summary.month_year}</h3>
+                      <div className="flex flex-col items-end">
+                        <span className="text-xs text-zinc-500">Unspent / Rolled Over</span>
+                        <span className="text-xl font-bold text-emerald-400">₹{summary.unspent_buffer.toLocaleString('en-IN')}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-zinc-500 mb-1">Total Income</p>
+                        <p className="font-medium text-zinc-200">₹{summary.total_income.toLocaleString('en-IN')}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-zinc-500 mb-1">Total Spent</p>
+                        <p className="font-medium text-zinc-200">₹{summary.total_spent.toLocaleString('en-IN')}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {cycleSummaries.length === 0 && (
+                  <div className="text-center text-zinc-500 py-12">No cycle data found.</div>
+                )}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </div>
       </Card>
     </div>
   );

@@ -13,6 +13,7 @@ interface FinanceContextType {
   addTransaction: (bucketId: string, amount: number, description: string) => Promise<void>;
   borrowFromBucket: (fromBucketId: string, toBucketId: string, amount: number) => Promise<void>;
   setupMonth: (income: number) => Promise<void>;
+  editIncome: (newIncome: number) => Promise<void>;
   addFixedExpense: (name: string, amount: number, category: string) => Promise<void>;
   editFixedExpense: (id: string, name: string, amount: number, category: string) => Promise<void>;
   deleteFixedExpense: (id: string) => Promise<void>;
@@ -37,6 +38,7 @@ const FinanceContext = createContext<FinanceContextType>({
   addTransaction: async () => {},
   borrowFromBucket: async () => {},
   setupMonth: async () => {},
+  editIncome: async () => {},
   addFixedExpense: async () => {},
   editFixedExpense: async () => {},
   deleteFixedExpense: async () => {},
@@ -242,6 +244,51 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     } catch (e) {
       console.error("Exception in setupMonth:", e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const editIncome = async (newIncome: number) => {
+    if (!user || !cycle) return;
+    setIsLoading(true);
+    try {
+      const totalFixed = fixedExpenses.reduce((acc, exp) => acc + exp.amount, 0);
+      const newLeftover = newIncome - totalFixed;
+
+      // Reverse engineer rollover from current buffer
+      const bufferBucket = buckets.find(b => b.bucket_type === 'BUFFER');
+      const currentLeftover = cycle.total_income - totalFixed;
+      const baseBuffer = currentLeftover * 0.2;
+      const rollover = bufferBucket ? (bufferBucket.allocated_amount - baseBuffer) : 0;
+
+      // New allocations
+      const needsAmount = newLeftover * 0.5;
+      const wantsAmount = newLeftover * 0.3;
+      const bufferAmount = (newLeftover * 0.2) + Math.max(0, rollover);
+
+      // Update cycle
+      const { error: cycleError } = await supabase.from('cycles').update({
+        total_income: newIncome,
+        leftover_money: newLeftover
+      }).eq('id', cycle.id);
+
+      if (cycleError) {
+        console.error("Error updating cycle income:", cycleError);
+        return;
+      }
+
+      // Update buckets
+      const needsBucket = buckets.find(b => b.bucket_type === 'NEEDS');
+      const wantsBucket = buckets.find(b => b.bucket_type === 'WANTS');
+      
+      if (needsBucket) await supabase.from('buckets').update({ allocated_amount: needsAmount }).eq('id', needsBucket.id);
+      if (wantsBucket) await supabase.from('buckets').update({ allocated_amount: wantsAmount }).eq('id', wantsBucket.id);
+      if (bufferBucket) await supabase.from('buckets').update({ allocated_amount: bufferAmount }).eq('id', bufferBucket.id);
+
+      await fetchData();
+    } catch (e) {
+      console.error("Exception in editIncome:", e);
     } finally {
       setIsLoading(false);
     }
@@ -507,7 +554,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   return (
     <FinanceContext.Provider value={{ 
       cycle, buckets, transactions, fixedExpenses, savingsGoals, isLoading, 
-      addTransaction, borrowFromBucket, setupMonth, addFixedExpense, 
+      addTransaction, borrowFromBucket, setupMonth, editIncome, addFixedExpense, 
       editFixedExpense, deleteFixedExpense, deleteTransaction, closeMonth,
       addSavingsGoal, fundSavingsGoal, deleteSavingsGoal,
       geminiApiKey, updateGeminiKey, currentMonthYear, setCurrentMonthYear
