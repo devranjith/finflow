@@ -47,7 +47,7 @@ export const AIInsightsCard: React.FC = () => {
     };
 
     fetchInsights();
-  }, [cycle, buckets, transactions]);
+  }, [cycle, buckets, transactions, geminiApiKey]);
 
   return (
     <Card className="bg-zinc-900/50 border-zinc-800 bg-gradient-to-br from-zinc-900/50 to-emerald-900/10 h-full flex flex-col">

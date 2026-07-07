@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Receipt, LogOut, Wallet, Settings } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../ui/button';
+import { AdvisorChat } from '../ai/AdvisorChat';
 
 
 export const Layout: React.FC = () => {
@@ -78,7 +79,7 @@ export const Layout: React.FC = () => {
       </main>
       
       {/* AI Advisor Chat Widget */}
-      {/*<AdvisorChat />*/}
+      <AdvisorChat />
     </div>
   );
 };

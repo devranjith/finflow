@@ -38,7 +38,7 @@ export const Settings: React.FC = () => {
             <CardTitle>AI Advisor Configuration</CardTitle>
           </div>
           <CardDescription className="text-zinc-400">
-            To use the Finflow AI Advisor, please provide a Google Gemini API Key. This key is stored safely and locally in your browser.
+            To use the Finflow AI Advisor, please provide a Google Gemini API Key. This key is stored securely in your account and used only to generate your financial insights.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -56,7 +56,7 @@ export const Settings: React.FC = () => {
                 className="bg-zinc-950 border-zinc-800 font-mono"
               />
               <p className="text-xs text-zinc-500">
-                You can get a free API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-emerald-400 hover:underline">Google AI Studio</a>. (Auto-saves locally)
+                You can get a free API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-emerald-400 hover:underline">Google AI Studio</a>. (Auto-saves to your account)
               </p>
             </div>
             <Button type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2">
