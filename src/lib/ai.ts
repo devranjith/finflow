@@ -62,6 +62,78 @@ ${prompt}
   }
 }
 
+export type ParsedTransaction = {
+  date: string;
+  description: string;
+  amount: number;
+  type: 'debit' | 'credit';
+  bucket: 'NEEDS' | 'WANTS' | 'BUFFER' | null;
+};
+
+const STATEMENT_PARSER_PROMPT = `You are a precise bank statement parser and personal finance categorizer for an Indian user (amounts are in INR).
+You will be given raw text extracted from a bank statement (CSV, PDF text, or pasted text).
+Extract EVERY individual transaction you can find. Ignore headers, footers, opening/closing balance summary lines, and non-transaction noise.
+
+For each transaction return an object with:
+- date: the transaction date in strict "YYYY-MM-DD" format. If the year is missing, infer the most likely recent year.
+- description: a short cleaned-up merchant/description (remove long reference numbers).
+- amount: a POSITIVE number (no currency symbols, no commas).
+- type: "debit" if money left the account (withdrawal/spent), "credit" if money came in (deposit/received).
+- bucket: for debits only, classify using the 50/30/20 rule:
+    - "NEEDS" for essentials: groceries, rent, utilities, electricity, water, gas, phone/internet bills, fuel/transport, medical, insurance, education, EMIs.
+    - "WANTS" for discretionary: dining/restaurants, food delivery, shopping, entertainment, streaming/subscriptions, travel/holidays, gadgets.
+    - "BUFFER" for savings, investments, mutual funds, self-transfers, or anything unclear.
+  For credits, set bucket to null.
+
+Return ONLY a valid JSON array of these objects. No markdown, no explanation. If you find no transactions, return [].`;
+
+export async function parseAndCategorizeStatement(
+  rawText: string,
+  apiKey?: string | null
+): Promise<ParsedTransaction[]> {
+  if (!apiKey) {
+    throw new Error('API_KEY_MISSING');
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+  // Guard against oversized inputs blowing the token budget.
+  const trimmed = rawText.slice(0, 30000);
+
+  const contextStr = `${STATEMENT_PARSER_PROMPT}\n\nBANK STATEMENT TEXT:\n${trimmed}`;
+
+  try {
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: contextStr }] }],
+      generationConfig: {
+        temperature: 0,
+        responseMimeType: 'application/json',
+      },
+    });
+
+    const text = result.response.text().trim();
+    const cleaned = text.replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+    const parsed = JSON.parse(cleaned);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .filter((t: any) => t && typeof t.amount !== 'undefined')
+      .map((t: any): ParsedTransaction => ({
+        date: typeof t.date === 'string' ? t.date : new Date().toISOString().slice(0, 10),
+        description: String(t.description ?? 'Transaction').trim(),
+        amount: Math.abs(Number(t.amount)) || 0,
+        type: t.type === 'credit' ? 'credit' : 'debit',
+        bucket: ['NEEDS', 'WANTS', 'BUFFER'].includes(t.bucket) ? t.bucket : null,
+      }))
+      .filter((t: ParsedTransaction) => t.amount > 0);
+  } catch (error) {
+    console.error("Gemini Statement Parse Error:", error);
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`FAILED_TO_PARSE: ${detail}`);
+  }
+}
+
 const GOAL_COACH_PROMPT = `You are Finflow AI, a savings-focused personal finance coach.
 You help the user reach a specific savings goal using money from their BUFFER bucket (the 20% in the 50/30/20 rule).
 Be concrete and encouraging. Assess whether the goal is on track, realistic, or stalled.

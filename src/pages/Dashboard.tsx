@@ -10,7 +10,8 @@ import { ScrollArea } from '../components/ui/scroll-area';
 import { ConfirmModal } from '../components/ui/confirm-modal';
 import { AIInsightsModal } from '../components/ai/AIInsightsCard';
 import { SavingsGoalsModal } from '../components/expenses/SavingsGoalsCard';
-import { Target, Sparkles } from 'lucide-react';
+import { BankImportModal } from '../components/expenses/BankImportModal';
+import { Target, Sparkles, Upload } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
 
 
@@ -26,6 +27,7 @@ export const Dashboard: React.FC = () => {
   const [isEditIncomeOpen, setIsEditIncomeOpen] = useState(false);
   const [isSavingsModalOpen, setIsSavingsModalOpen] = useState(false);
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editIncomeValue, setEditIncomeValue] = useState('');
 
   if (isLoading) {
@@ -175,8 +177,17 @@ export const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1 min-h-0 pb-4">
         {/* Transactions List */}
         <Card className="md:col-span-2 bg-zinc-900/50 border-zinc-800 flex flex-col min-h-0">
-          <CardHeader className="shrink-0">
+          <CardHeader className="shrink-0 flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-lg">Recent Transactions</CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300 h-8 text-xs gap-1.5"
+              onClick={() => setIsImportModalOpen(true)}
+            >
+              <Upload size={14} />
+              Import Statement
+            </Button>
           </CardHeader>
           <CardContent className="flex-1 min-h-0">
             <ScrollArea className="h-full pr-4">
@@ -249,6 +260,8 @@ export const Dashboard: React.FC = () => {
       <SavingsGoalsModal open={isSavingsModalOpen} onOpenChange={setIsSavingsModalOpen} />
 
       <AIInsightsModal open={isAIModalOpen} onOpenChange={setIsAIModalOpen} />
+
+      <BankImportModal open={isImportModalOpen} onOpenChange={setIsImportModalOpen} />
 
       <TransactionDrawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen} />
 

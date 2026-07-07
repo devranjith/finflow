@@ -11,6 +11,7 @@ interface FinanceContextType {
   savingsGoals: SavingsGoal[];
   isLoading: boolean;
   addTransaction: (bucketId: string, amount: number, description: string) => Promise<void>;
+  importTransactions: (items: { bucketType: 'NEEDS' | 'WANTS' | 'BUFFER'; amount: number; description: string; date?: string }[]) => Promise<number>;
   borrowFromBucket: (fromBucketId: string, toBucketId: string, amount: number) => Promise<void>;
   setupMonth: (income: number) => Promise<void>;
   editIncome: (newIncome: number) => Promise<void>;
@@ -36,6 +37,7 @@ const FinanceContext = createContext<FinanceContextType>({
   savingsGoals: [],
   isLoading: true,
   addTransaction: async () => {},
+  importTransactions: async () => 0,
   borrowFromBucket: async () => {},
   setupMonth: async () => {},
   editIncome: async () => {},
@@ -171,6 +173,65 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     } catch (e) {
       console.error("Exception adding transaction:", e);
+    }
+  };
+
+  const importTransactions = async (
+    items: { bucketType: 'NEEDS' | 'WANTS' | 'BUFFER'; amount: number; description: string; date?: string }[]
+  ): Promise<number> => {
+    if (!cycle || items.length === 0) return 0;
+
+    try {
+      const bucketByType: Record<string, Bucket | undefined> = {
+        NEEDS: buckets.find(b => b.bucket_type === 'NEEDS'),
+        WANTS: buckets.find(b => b.bucket_type === 'WANTS'),
+        BUFFER: buckets.find(b => b.bucket_type === 'BUFFER'),
+      };
+
+      const rows = items
+        .map(item => {
+          const bucket = bucketByType[item.bucketType];
+          if (!bucket) return null;
+          return {
+            cycle_id: cycle.id,
+            bucket_id: bucket.id,
+            amount: item.amount,
+            description: item.description,
+            ...(item.date ? { date: item.date } : {}),
+          };
+        })
+        .filter((r): r is NonNullable<typeof r> => r !== null);
+
+      if (rows.length === 0) return 0;
+
+      const { error } = await supabase.from('transactions').insert(rows);
+      if (error) {
+        console.error("Error importing transactions:", error);
+        return 0;
+      }
+
+      // Aggregate spend per bucket and update spent_amount once per bucket.
+      const spendByBucketId: Record<string, number> = {};
+      for (const row of rows) {
+        spendByBucketId[row.bucket_id] = (spendByBucketId[row.bucket_id] || 0) + row.amount;
+      }
+
+      await Promise.all(
+        Object.entries(spendByBucketId).map(([bucketId, spend]) => {
+          const bucket = buckets.find(b => b.id === bucketId);
+          if (!bucket) return Promise.resolve();
+          return supabase
+            .from('buckets')
+            .update({ spent_amount: bucket.spent_amount + spend })
+            .eq('id', bucketId);
+        })
+      );
+
+      await fetchData();
+      return rows.length;
+    } catch (e) {
+      console.error("Exception importing transactions:", e);
+      return 0;
     }
   };
 
@@ -554,7 +615,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   return (
     <FinanceContext.Provider value={{ 
       cycle, buckets, transactions, fixedExpenses, savingsGoals, isLoading, 
-      addTransaction, borrowFromBucket, setupMonth, editIncome, addFixedExpense, 
+      addTransaction, importTransactions, borrowFromBucket, setupMonth, editIncome, addFixedExpense, 
       editFixedExpense, deleteFixedExpense, deleteTransaction, closeMonth,
       addSavingsGoal, fundSavingsGoal, deleteSavingsGoal,
       geminiApiKey, updateGeminiKey, currentMonthYear, setCurrentMonthYear
