@@ -3,7 +3,6 @@ import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
-import { ScrollArea } from '../ui/scroll-area';
 import { Upload, FileText, Sparkles, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { parseAndCategorizeStatement } from '../../lib/ai';
@@ -247,7 +246,7 @@ export const BankImportModal: React.FC<{ open: boolean; onOpenChange: (open: boo
 
         {/* STEP: REVIEW */}
         {step === 'review' && (
-          <div className="flex-1 overflow-hidden flex flex-col min-h-0 mt-2 gap-3">
+          <div className="flex flex-col gap-3 mt-2">
             <div className="flex items-center justify-between text-sm shrink-0">
               <span className="text-zinc-400">
                 {selectedRows.length} of {rows.length} selected
@@ -256,7 +255,7 @@ export const BankImportModal: React.FC<{ open: boolean; onOpenChange: (open: boo
               <span className="text-zinc-300 font-medium">Total: ₹{selectedTotal.toLocaleString('en-IN')}</span>
             </div>
 
-            <ScrollArea className="flex-1 min-h-0 max-h-[55vh] pr-3">
+            <div className="overflow-y-auto max-h-[55vh] pr-1 -mr-1 custom-scrollbar">
               <div className="space-y-2">
                 {rows.map(row => (
                   <div
@@ -291,7 +290,7 @@ export const BankImportModal: React.FC<{ open: boolean; onOpenChange: (open: boo
                   </div>
                 ))}
               </div>
-            </ScrollArea>
+            </div>
 
             {error && (
               <div className="flex items-start gap-2 text-sm text-amber-400 bg-amber-500/10 rounded-lg p-3 shrink-0">
