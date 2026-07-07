@@ -179,7 +179,7 @@ export const BankImportModal: React.FC<{ open: boolean; onOpenChange: (open: boo
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-50 sm:max-w-[640px] flex flex-col max-h-[88vh]">
+      <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-50 sm:max-w-[640px] flex flex-col max-h-[88vh] overflow-hidden">
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Upload size={20} className="text-emerald-400" />
@@ -247,7 +247,7 @@ export const BankImportModal: React.FC<{ open: boolean; onOpenChange: (open: boo
 
         {/* STEP: REVIEW */}
         {step === 'review' && (
-          <div className="flex flex-col gap-3 mt-2 min-h-0 flex-1">
+          <div className="flex-1 overflow-hidden flex flex-col min-h-0 mt-2 gap-3">
             <div className="flex items-center justify-between text-sm shrink-0">
               <span className="text-zinc-400">
                 {selectedRows.length} of {rows.length} selected
@@ -256,7 +256,7 @@ export const BankImportModal: React.FC<{ open: boolean; onOpenChange: (open: boo
               <span className="text-zinc-300 font-medium">Total: ₹{selectedTotal.toLocaleString('en-IN')}</span>
             </div>
 
-            <ScrollArea className="flex-1 min-h-0 pr-3 -mr-2">
+            <ScrollArea className="flex-1 min-h-0 max-h-[55vh] pr-3">
               <div className="space-y-2">
                 {rows.map(row => (
                   <div
