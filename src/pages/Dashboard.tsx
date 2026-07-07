@@ -8,9 +8,9 @@ import { AlertCircle, IndianRupee, Trash, Edit2 } from 'lucide-react';
 import { TransactionDrawer } from '../components/expenses/TransactionDrawer';
 import { ScrollArea } from '../components/ui/scroll-area';
 import { ConfirmModal } from '../components/ui/confirm-modal';
-import { AIInsightsCard } from '../components/ai/AIInsightsCard';
+import { AIInsightsModal } from '../components/ai/AIInsightsCard';
 import { SavingsGoalsModal } from '../components/expenses/SavingsGoalsCard';
-import { Target } from 'lucide-react';
+import { Target, Sparkles } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
 
 
@@ -25,6 +25,7 @@ export const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'goals' | 'ai'>('goals');
   const [isEditIncomeOpen, setIsEditIncomeOpen] = useState(false);
   const [isSavingsModalOpen, setIsSavingsModalOpen] = useState(false);
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   const [editIncomeValue, setEditIncomeValue] = useState('');
 
   if (isLoading) {
@@ -235,13 +236,19 @@ export const Dashboard: React.FC = () => {
               </Card>
             </div>
             <div className={`absolute inset-0 flex flex-col transition-opacity duration-200 ${activeTab === 'ai' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-              <AIInsightsCard />
+              <Card className="bg-zinc-900/50 border-zinc-800 bg-gradient-to-br from-zinc-900/50 to-emerald-900/10 flex flex-col h-full justify-center items-center cursor-pointer hover:bg-zinc-800/50 transition-colors" onClick={() => setIsAIModalOpen(true)}>
+                <Sparkles size={32} className="text-emerald-400 mb-3" />
+                <h3 className="text-lg font-medium text-zinc-200">View AI Insights</h3>
+                <p className="text-sm text-zinc-500 mt-1">Tap for personalized financial advice</p>
+              </Card>
             </div>
           </div>
         </div>
       </div>
 
       <SavingsGoalsModal open={isSavingsModalOpen} onOpenChange={setIsSavingsModalOpen} />
+
+      <AIInsightsModal open={isAIModalOpen} onOpenChange={setIsAIModalOpen} />
 
       <TransactionDrawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen} />
 
