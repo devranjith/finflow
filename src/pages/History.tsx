@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { Card, CardContent, CardHeader } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Download, Search } from 'lucide-react';
+import { Download, Search, CalendarClock } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { ScrollArea } from '../components/ui/scroll-area';
 import type { Transaction } from '../types/database';
@@ -94,6 +94,26 @@ export const History: React.FC = () => {
     return matchesSearch && matchesMonth;
   });
 
+  // "This Month So Far" metrics
+  const now = new Date();
+  const currentMonthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+  const spentSoFar = historyItems
+    .filter(item => item.month_year === currentMonthYear && new Date(item.date) <= endOfToday)
+    .reduce((acc, item) => acc + item.amount, 0);
+
+  const daysElapsed = now.getDate();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const dailyAvg = daysElapsed > 0 ? spentSoFar / daysElapsed : 0;
+  const projectedMonthEnd = dailyAvg * daysInMonth;
+
+  const currentSummary = cycleSummaries.find(s => s.month_year === currentMonthYear);
+  const monthBudget = currentSummary ? currentSummary.total_income : 0;
+  const isProjectedOverBudget = monthBudget > 0 && projectedMonthEnd > monthBudget;
+
+  const todayLabel = now.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
   const exportCSV = () => {
     if (historyItems.length === 0) return;
     
@@ -133,6 +153,44 @@ export const History: React.FC = () => {
           Export CSV
         </Button>
       </div>
+
+      {/* This Month So Far */}
+      <Card className="bg-zinc-900/50 border-zinc-800 bg-gradient-to-br from-zinc-900/50 to-emerald-900/10 shrink-0">
+        <CardContent className="p-5">
+          {spentSoFar > 0 ? (
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 text-emerald-400">
+                  <CalendarClock size={16} />
+                  <span className="text-sm font-medium">This Month So Far</span>
+                </div>
+                <p className="text-3xl font-bold text-zinc-50 mt-2">₹{spentSoFar.toLocaleString('en-IN')}</p>
+                <p className="text-xs text-zinc-500 mt-1">spent as of {todayLabel}</p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 md:gap-6">
+                <div>
+                  <p className="text-xs text-zinc-500 mb-1">Day</p>
+                  <p className="font-semibold text-zinc-200">{daysElapsed} <span className="text-zinc-500 font-normal">of {daysInMonth}</span></p>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-500 mb-1">Daily average</p>
+                  <p className="font-semibold text-zinc-200">₹{Math.round(dailyAvg).toLocaleString('en-IN')}<span className="text-zinc-500 font-normal">/day</span></p>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-500 mb-1">Projected month-end</p>
+                  <p className={`font-semibold ${isProjectedOverBudget ? 'text-red-400' : 'text-emerald-400'}`}>₹{Math.round(projectedMonthEnd).toLocaleString('en-IN')}</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-zinc-500">
+              <CalendarClock size={16} />
+              <span className="text-sm">No spending recorded this month yet.</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="flex bg-zinc-900/80 p-1 rounded-lg border border-zinc-800 shrink-0 mx-auto w-full max-w-sm mb-4">
         <button
@@ -219,28 +277,42 @@ export const History: React.FC = () => {
           <CardContent className="flex-1 min-h-0">
             <ScrollArea className="h-full pr-4">
               <div className="space-y-4">
-                {cycleSummaries.map(summary => (
+                {cycleSummaries.map(summary => {
+                  const [sy, sm] = summary.month_year.split('-').map(Number);
+                  const isCurrent = summary.month_year === currentMonthYear;
+                  const daysForMonth = isCurrent ? daysElapsed : new Date(sy, sm, 0).getDate();
+                  const monthDailyAvg = daysForMonth > 0 ? summary.total_spent / daysForMonth : 0;
+
+                  return (
                   <div key={summary.id} className="p-5 rounded-lg bg-zinc-950/50 border border-zinc-800/50">
                     <div className="flex items-center justify-between mb-4 pb-4 border-b border-zinc-800/50">
-                      <h3 className="text-lg font-semibold text-zinc-100">{summary.month_year}</h3>
+                      <h3 className="text-lg font-semibold text-zinc-100 flex items-center gap-2">
+                        {summary.month_year}
+                        {isCurrent && <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full font-medium">In progress</span>}
+                      </h3>
                       <div className="flex flex-col items-end">
                         <span className="text-xs text-zinc-500">Unspent / Rolled Over</span>
                         <span className="text-xl font-bold text-emerald-400">₹{summary.unspent_buffer.toLocaleString('en-IN')}</span>
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                       <div>
                         <p className="text-xs text-zinc-500 mb-1">Total Income</p>
                         <p className="font-medium text-zinc-200">₹{summary.total_income.toLocaleString('en-IN')}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-zinc-500 mb-1">Total Spent</p>
+                        <p className="text-xs text-zinc-500 mb-1">{isCurrent ? 'Spent so far' : 'Total Spent'}</p>
                         <p className="font-medium text-zinc-200">₹{summary.total_spent.toLocaleString('en-IN')}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-zinc-500 mb-1">Avg / day</p>
+                        <p className="font-medium text-zinc-200">₹{Math.round(monthDailyAvg).toLocaleString('en-IN')}</p>
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
                 {cycleSummaries.length === 0 && (
                   <div className="text-center text-zinc-500 py-12">No cycle data found.</div>
                 )}
