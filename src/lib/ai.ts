@@ -194,3 +194,95 @@ Give this user a short, actionable coaching plan to reach the "${goal.name}" goa
     throw new Error(`FAILED_TO_GENERATE: ${detail}`);
   }
 }
+
+export type InvestmentAllocation = {
+  category: 'emergency_fund' | 'debt_fd' | 'equity_sip' | 'gold' | 'goal_specific' | 'hold_cash';
+  amount: number;
+  instrument_examples: string[];
+  rationale: string;
+  priority: number;
+};
+
+export type InvestmentPlan = {
+  summary: string;
+  investableAmount: number;
+  allocations: InvestmentAllocation[];
+  warnings: string[];
+  nextMonthTip: string;
+  disclaimer: string;
+};
+
+const INVESTMENT_ADVISOR_PROMPT = `You are Finflow AI, an Indian personal finance investment advisor (educational guidance only, NOT SEBI-registered advice).
+
+You will receive a JSON object with PRE-COMPUTED financial numbers. You MUST NOT change investableAmount — use exactly the provided investableSurplus value.
+
+Allocation priority rules:
+1. If needsEmergencyFundFirst or emergencyGap > 0: prioritize emergency_fund / liquid mutual fund first
+2. If hasUnfundedGoals: allocate to goal_specific (debt fund / FD for short-term goals)
+3. Remaining investable: equity_sip (Nifty 50 / index funds) for long horizon; debt_fd for conservative or short horizon
+4. If overspending is true: investableAmount must be 0; allocations empty or hold_cash only; warnings must explain spending fixes
+5. If hasHighFixedRatio: conservative mix, smaller equity SIP
+6. Respect riskTolerance: conservative = more debt_fd/hold_cash; aggressive = more equity_sip
+7. Respect horizon: short = debt_fd; long = equity_sip
+
+Return ONLY valid JSON matching this schema:
+{
+  "summary": "1-2 sentence overview",
+  "investableAmount": number (must equal input investableSurplus),
+  "allocations": [
+    {
+      "category": "emergency_fund" | "debt_fd" | "equity_sip" | "gold" | "goal_specific" | "hold_cash",
+      "amount": number,
+      "instrument_examples": ["string"],
+      "rationale": "string",
+      "priority": number
+    }
+  ],
+  "warnings": ["string"],
+  "nextMonthTip": "string",
+  "disclaimer": "Educational guidance only, not SEBI-registered investment advice."
+}
+
+Allocation amounts must sum to investableAmount (or 0 if overspending). Use INR. No markdown.`;
+
+export async function askInvestmentAdvisor(
+  context: import('./investmentAnalysis').InvestmentContext,
+  apiKey?: string | null
+): Promise<InvestmentPlan> {
+  if (!apiKey) {
+    throw new Error('API_KEY_MISSING');
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+  const contextStr = `${INVESTMENT_ADVISOR_PROMPT}\n\nFINANCIAL CONTEXT (JSON):\n${JSON.stringify(context, null, 2)}`;
+
+  try {
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: contextStr }] }],
+      generationConfig: {
+        temperature: 0.3,
+        responseMimeType: 'application/json',
+      },
+    });
+
+    const text = result.response.text().trim();
+    const cleaned = text.replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+    const parsed = JSON.parse(cleaned) as InvestmentPlan;
+
+    parsed.investableAmount = context.investableSurplus;
+    parsed.disclaimer = parsed.disclaimer || 'Educational guidance only, not SEBI-registered investment advice.';
+
+    if (context.overspending) {
+      parsed.investableAmount = 0;
+      parsed.allocations = parsed.allocations?.filter(a => a.category === 'hold_cash') ?? [];
+    }
+
+    return parsed;
+  } catch (error) {
+    console.error('Gemini Investment Advisor Error:', error);
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`FAILED_TO_GENERATE: ${detail}`);
+  }
+}

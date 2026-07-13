@@ -9,9 +9,10 @@ import { TransactionDrawer } from '../components/expenses/TransactionDrawer';
 import { ScrollArea } from '../components/ui/scroll-area';
 import { ConfirmModal } from '../components/ui/confirm-modal';
 import { AIInsightsModal } from '../components/ai/AIInsightsCard';
+import { SmartInvestmentModal } from '../components/ai/SmartInvestmentModal';
 import { SavingsGoalsModal } from '../components/expenses/SavingsGoalsCard';
 import { BankImportModal } from '../components/expenses/BankImportModal';
-import { Target, Sparkles, Upload } from 'lucide-react';
+import { Target, Sparkles, Upload, TrendingUp } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
 
 
@@ -23,10 +24,11 @@ export const Dashboard: React.FC = () => {
   
   const [deleteTxParams, setDeleteTxParams] = useState<{id: string, bucketId: string, amount: number} | null>(null);
   const [showCloseMonthModal, setShowCloseMonthModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'goals' | 'ai'>('goals');
+  const [activeTab, setActiveTab] = useState<'goals' | 'ai' | 'invest'>('goals');
   const [isEditIncomeOpen, setIsEditIncomeOpen] = useState(false);
   const [isSavingsModalOpen, setIsSavingsModalOpen] = useState(false);
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const [isInvestModalOpen, setIsInvestModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editIncomeValue, setEditIncomeValue] = useState('');
 
@@ -227,15 +229,21 @@ export const Dashboard: React.FC = () => {
           <div className="flex bg-zinc-900/80 p-1 rounded-lg border border-zinc-800 shrink-0">
             <button
               onClick={() => setActiveTab('goals')}
-              className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === 'goals' ? 'bg-zinc-800 text-emerald-400 shadow-sm' : 'text-zinc-400 hover:text-zinc-200'}`}
+              className={`flex-1 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${activeTab === 'goals' ? 'bg-zinc-800 text-emerald-400 shadow-sm' : 'text-zinc-400 hover:text-zinc-200'}`}
             >
-              Savings Goals
+              Goals
             </button>
             <button
               onClick={() => setActiveTab('ai')}
-              className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === 'ai' ? 'bg-zinc-800 text-emerald-400 shadow-sm' : 'text-zinc-400 hover:text-zinc-200'}`}
+              className={`flex-1 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${activeTab === 'ai' ? 'bg-zinc-800 text-emerald-400 shadow-sm' : 'text-zinc-400 hover:text-zinc-200'}`}
             >
               AI Insights
+            </button>
+            <button
+              onClick={() => setActiveTab('invest')}
+              className={`flex-1 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${activeTab === 'invest' ? 'bg-zinc-800 text-emerald-400 shadow-sm' : 'text-zinc-400 hover:text-zinc-200'}`}
+            >
+              Smart Invest
             </button>
           </div>
           <div className="flex-1 min-h-0 relative">
@@ -253,6 +261,13 @@ export const Dashboard: React.FC = () => {
                 <p className="text-sm text-zinc-500 mt-1">Tap for personalized financial advice</p>
               </Card>
             </div>
+            <div className={`absolute inset-0 flex flex-col transition-opacity duration-200 ${activeTab === 'invest' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+              <Card className="bg-zinc-900/50 border-zinc-800 bg-gradient-to-br from-zinc-900/50 to-blue-900/10 flex flex-col h-full justify-center items-center cursor-pointer hover:bg-zinc-800/50 transition-colors" onClick={() => setIsInvestModalOpen(true)}>
+                <TrendingUp size={32} className="text-blue-400 mb-3" />
+                <h3 className="text-lg font-medium text-zinc-200">Smart Invest</h3>
+                <p className="text-sm text-zinc-500 mt-1">Monthly investment plan for your buffer</p>
+              </Card>
+            </div>
           </div>
         </div>
       </div>
@@ -260,6 +275,8 @@ export const Dashboard: React.FC = () => {
       <SavingsGoalsModal open={isSavingsModalOpen} onOpenChange={setIsSavingsModalOpen} />
 
       <AIInsightsModal open={isAIModalOpen} onOpenChange={setIsAIModalOpen} />
+
+      <SmartInvestmentModal open={isInvestModalOpen} onOpenChange={setIsInvestModalOpen} />
 
       <BankImportModal open={isImportModalOpen} onOpenChange={setIsImportModalOpen} />
 

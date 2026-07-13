@@ -5,7 +5,14 @@ export type Profile = {
   dependents: number;
   default_income: number;
   gemini_api_key?: string | null;
+  investment_preferences?: InvestmentPreferences | null;
   created_at: string;
+};
+
+export type InvestmentPreferences = {
+  riskTolerance: 'conservative' | 'moderate' | 'aggressive';
+  horizon: 'short' | 'medium' | 'long';
+  hasEmergencyFund: boolean;
 };
 
 export type FixedExpense = {
